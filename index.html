@@ -2191,14 +2191,14 @@ function openNewProject(){
   showModal('new-project');
 }
 
-function createProject(name,team,flowType){
+function createProject(name,team,flowType,startStep){
   const num='PGM-'+state.nextNum;
   state.nextNum++;
   saveNextNum();
   const teamIdx=TEAMS.indexOf(team);
   const p={
     id:'p'+Date.now(),num,name,team,
-    status:'active',currentStep:1,
+    status:'active',currentStep:startStep||1,
     createdAt:new Date().toISOString().slice(0,10),
     createdBy:state.user?.name||'',
     step1:{flowType:flowType||'normal',productCategory:'penlight',penType:'',submitType:'',notes:''},
@@ -2904,6 +2904,15 @@ function showModal(type){
             </label>
           </div>
         </div>
+        <div class="form-group" style="margin-bottom:0;margin-top:14px">
+          <label class="form-label">開始フェーズ <span class="text-xs text-muted">（通常は①から）</span></label>
+          <select class="form-input form-select" id="modal-startstep">
+            <option value="1">① 作成依頼から開始（通常）</option>
+            <option value="2">② 見積依頼から開始</option>
+            <option value="3">③ 企画書から開始（フォームURLを設定するだけ）</option>
+            <option value="4">④ G2試作品審査から開始</option>
+          </select>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn" onclick="closeModal()">キャンセル</button>
@@ -2933,9 +2942,10 @@ function submitNewProject(){
   const team=document.getElementById('modal-team')?.value;
   const flowNormal=document.getElementById('modal-flow-normal');
   const flow=flowNormal?.checked?'normal':'actual';
+  const startStep=parseInt(document.getElementById('modal-startstep')?.value||'1');
   if(!name){showToast('案件名を入力してください','error');return;}
   if(!team){showToast('チーム名を選択してください','error');return;}
-  createProject(name,team,flow);
+  createProject(name,team,flow,startStep);
 }
 
 // ===== TOAST =====
