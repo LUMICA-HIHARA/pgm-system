@@ -456,10 +456,10 @@ const SUBMIT_TYPES=[
 const FACTORIES=['工場A（中国・広州）','工場B（中国・深圳）','工場C（ベトナム・ハノイ）','工場D（国内）'];
 
 let state = {
-  user: null,       // null = not logged in
-  isAdmin: false,   // true = admin view (all projects)
+  user: null,
+  isAdmin: false,
   screen: 'login',
-  loginStep: 'select', // 'select' | 'password' | 'register'
+  loginStep: 'select',
   loginUserId: null,
   projectId: null,
   projects: loadProjects(),
@@ -467,7 +467,18 @@ let state = {
   lastSaved: null,
   unsaved: false,
   users: loadUsers(),
+  settings: loadSettings(),
 };
+
+function loadSettings(){
+  try{
+    const d=localStorage.getItem('pgm_settings');
+    return d?JSON.parse(d):{};
+  }catch(e){return {};}
+}
+function saveSettings(){
+  try{localStorage.setItem('pgm_settings',JSON.stringify(state.settings));}catch(e){}
+}
 
 function loadProjects(){
   try{
@@ -572,7 +583,8 @@ function renderShell(content){
     </div>
     <div class="nav-bar">
       <div class="nav-tab ${state.screen==='dashboard'?'active':''}" onclick="showDashboard()">進行案件一覧</div>
-      ${isAdmin?`<div class="nav-tab" onclick="showUserAdmin()"><span style="font-size:12pxfont-style:normal">👥</span> ユーザー管理</div>`:''}
+      ${isAdmin?`<div class="nav-tab" onclick="showUserAdmin()"><span style="font-size:12px;font-style:normal">&#128101;</span> ユーザー管理</div>
+      <div class="nav-tab" onclick="showAdminSettings()"><span style="font-style:normal">&#9881;</span> システム設定</div>`:''}
     </div>
     ${renderEnvBanner()}
     <div id="sync-bar" class="sync-bar">${renderSyncBarContent()}</div>
@@ -767,9 +779,10 @@ function doLogin(){
   const uid=state.loginUserId;
 
   if(uid==='__admin__'){
-    // Admin password: pgm-admin (hashed)
-    const adminHash=hashSync('pgm-admin');
-    if(hashSync(pw)===adminHash){
+    const customHash=state.settings?.adminPwHash;
+    const defaultHash=hashSync('pgm-admin');
+    const valid=customHash?hashSync(pw)===customHash:hashSync(pw)===defaultHash;
+    if(valid){
       state.user={id:'__admin__',name:'管理者',team:'製品開発',color:'#e74c3c'};
       state.isAdmin=true;
       state.screen='dashboard';
@@ -891,6 +904,115 @@ function showUserAdmin(){
   </div>`;
   overlay.onclick=closeModal;
   document.body.appendChild(overlay);
+}
+
+function showAdminSettings(){
+  const s=state.settings;
+  const depts=['営業','開発','品管','知財','購買'];
+  const deptColors={営業:'#e07000',開発:'#1a6050',品管:'#185fa5',知財:'#a32d2d',購買:'#7a3d00'};
+
+  const overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.id='modal-overlay';
+  overlay.innerHTML=`
+  <div class="modal" style="width:640px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">&#9881; システム設定</div>
+        <div class="text-xs text-muted mt-4">管理者のみ設定できます。設定はJSONエクスポートで共有されます。</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- 企画書フォーム共通設定 -->
+      <div style="background:#1a2a4a;border-radius:var(--radius) var(--radius) 0 0;padding:10px 16px;font-size:12px;font-weight:700;color:#8ab4d4;margin-bottom:0">
+        &#128203; 企画書 Google Forms 設定（部門別）
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);padding:16px;margin-bottom:16px">
+        <div class="text-xs text-muted mb-12">各部門のフォームURLをここで一度設定すると、全案件の③企画書画面に自動適用されます。</div>
+
+        ${depts.map(dep=>`
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;font-weight:700;color:${deptColors[dep]||'var(--accent)'};display:block;margin-bottom:4px">
+            【 ${dep}部門 】フォームURL
+          </label>
+          <input class="form-input text-mono" id="settings-form-${dep}"
+            value="${escHtml(s.deptForms?.[dep]||s.g1FormUrl||'')}"
+            placeholder="https://docs.google.com/forms/d/e/xxxxx/viewform"
+            style="font-size:11px">
+        </div>`).join('')}
+
+        <div style="margin-top:4px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">
+            回答スプレッドシート URL（管理者用・任意）
+          </label>
+          <input class="form-input text-mono" id="settings-sheet-url"
+            value="${escHtml(s.sheetUrl||'')}"
+            placeholder="https://docs.google.com/spreadsheets/d/xxxxx"
+            style="font-size:11px">
+        </div>
+      </div>
+
+      <!-- 管理者パスワード変更 -->
+      <div style="background:#1a2a4a;border-radius:var(--radius) var(--radius) 0 0;padding:10px 16px;font-size:12px;font-weight:700;color:#8ab4d4">
+        &#128274; 管理者パスワード変更
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);padding:16px">
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">新しいパスワード</label>
+            <input type="password" class="form-input" id="settings-newpw" placeholder="6文字以上">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">確認</label>
+            <input type="password" class="form-input" id="settings-newpw2" placeholder="もう一度入力">
+          </div>
+        </div>
+        <div id="settings-pw-msg" style="font-size:11px;color:var(--danger);margin-top:4px;min-height:16px"></div>
+        <button class="btn btn-sm mt-8" onclick="changeAdminPassword()">パスワードを変更</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveAdminSettings()">&#128190; 設定を保存</button>
+    </div>
+  </div>`;
+  overlay.onclick=closeModal;
+  document.body.appendChild(overlay);
+}
+
+function saveAdminSettings(){
+  const depts=['営業','開発','品管','知財','購買'];
+  if(!state.settings) state.settings={};
+  if(!state.settings.deptForms) state.settings.deptForms={};
+
+  depts.forEach(dep=>{
+    const el=document.getElementById(`settings-form-${dep}`);
+    if(el) state.settings.deptForms[dep]=el.value.trim();
+  });
+  const sheetEl=document.getElementById('settings-sheet-url');
+  if(sheetEl) state.settings.sheetUrl=sheetEl.value.trim();
+
+  // Also set g1FormUrl as the 全体共通URL（営業フォームをデフォルトに）
+  state.settings.g1FormUrl=state.settings.deptForms['営業']||'';
+
+  saveSettings();
+  closeModal();
+  showToast('システム設定を保存しました','success');
+}
+
+function changeAdminPassword(){
+  const pw=document.getElementById('settings-newpw')?.value||'';
+  const pw2=document.getElementById('settings-newpw2')?.value||'';
+  const msg=document.getElementById('settings-pw-msg');
+  if(pw.length<6){if(msg)msg.textContent='6文字以上で入力してください';return;}
+  if(pw!==pw2){if(msg)msg.textContent='パスワードが一致しません';return;}
+  if(!state.settings) state.settings={};
+  state.settings.adminPwHash=hashSync(pw);
+  saveSettings();
+  if(msg){msg.textContent='変更しました';msg.style.color='var(--success)';}
+  showToast('管理者パスワードを変更しました','success');
 }
 
 function deleteUser(uid){
@@ -1604,29 +1726,32 @@ function renderQuoteCard(pid,q,i){
 function renderStep3(p){
   const d=p.step3||{dept:{},fields:{}};
   const depts=d.dept||{};
+  const s=state.settings||{};
+  const deptForms=s.deptForms||{};
   const approvedCount=['開発','品管','知財','購買','営業リーダー'].filter(dep=>depts[dep+'_status']==='承認').length;
   const allApproved=approvedCount>=5;
-  const formUrl=d.fields?.formUrl||'';
-  const sheetUrl=d.fields?.sheetUrl||'';
+  const sheetUrl=p.step3?.fields?.sheetUrl||s.sheetUrl||'';
   const today=new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'});
+  const isAdmin=state.isAdmin;
 
-  // Build Google Form pre-fill URL if base URL is set
-  const buildFormUrl=()=>{
-    if(!formUrl) return '';
-    try{
-      const u=new URL(formUrl);
-      // Append pre-fill params (entry IDs set after form creation)
-      const pre=d.fields?.prefillEntries||{};
-      if(pre.num) u.searchParams.set(pre.num, p.num);
-      if(pre.name) u.searchParams.set(pre.name, p.name);
-      if(pre.team) u.searchParams.set(pre.team, p.team||'');
-      return u.toString();
-    }catch(e){return formUrl;}
-  };
+  // Check if any dept form is configured (system-wide or per-project)
+  const hasAnyForm=Object.values(deptForms).some(u=>u)||p.step3?.fields?.formUrl;
 
-  const deptStatusColor={
-    '承認':'var(--success)','差し戻し':'var(--danger)',
-    '確認中':'var(--warn)','—':'var(--text3)',undefined:'var(--text3)'
+  const deptColors={営業:'#e07000',開発:'#1a6050',品管:'#185fa5',知財:'#a32d2d',購買:'#7a3d00'};
+  const deptStatusColor={'承認':'var(--success)','差し戻し':'var(--danger)','確認中':'var(--warn)','—':'var(--text3)',undefined:'var(--text3)'};
+
+  // Build dept button: use system setting first, fall back to per-project URL
+  const deptBtn=(dep,label)=>{
+    const url=deptForms[dep]||p.step3?.fields?.formUrl||'';
+    const hasUrl=!!url;
+    const col=deptColors[dep]||'var(--accent)';
+    return `<button
+      onclick="openDeptForm('${p.id}','${dep}')"
+      ${!hasUrl?'disabled':''} 
+      style="flex:1;padding:10px 12px;border-radius:var(--radius);border:1px solid ${hasUrl?col:'var(--border)'};background:${hasUrl?col+'18':'var(--bg3)'};color:${hasUrl?col:'var(--text3)'};font-size:12px;font-weight:700;cursor:${hasUrl?'pointer':'not-allowed'};transition:all 0.15s;text-align:center">
+      &#128203; ${label}<br>
+      <span style="font-size:10px;font-weight:400;opacity:0.8">${hasUrl?'フォームを開く':'URL未設定'}</span>
+    </button>`;
   };
 
   return `
@@ -1638,7 +1763,7 @@ function renderStep3(p){
           <span style="font-size:20px">&#128203;</span>
           <div>
             <div style="font-size:18px;font-weight:700;color:#fff">企画書 G1</div>
-            <div style="font-size:12px;color:#8ab4d4;margin-top:4px">Google Forms で複数部門が並行記入・承認できます</div>
+            <div style="font-size:12px;color:#8ab4d4;margin-top:4px">各部門が担当フォームを記入・送信 → 管理者が承認ステータスを更新</div>
           </div>
         </div>
         <div style="text-align:right;font-size:12px;color:#8ab4d4;line-height:1.8">
@@ -1648,61 +1773,46 @@ function renderStep3(p){
       </div>
     </div>
 
-    <!-- Google Form リンク設定 -->
+    <!-- フォームが未設定の場合の案内（管理者向け） -->
+    ${!hasAnyForm?`
+    <div style="background:rgba(243,156,18,0.08);border:1px solid rgba(243,156,18,0.3);border-radius:var(--radius);padding:14px 18px;margin-bottom:12px;font-size:13px">
+      <div style="font-weight:700;color:var(--warn);margin-bottom:6px">&#9888; フォームURLが設定されていません</div>
+      <div style="color:var(--text2)">管理者がナビの「&#9881; システム設定」から部門別フォームURLを登録してください。</div>
+    </div>`:''}
+
+    <!-- 部門別フォームボタン -->
     <div class="card mb-12">
       <div style="background:#1a2a4a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:12px 20px;font-size:13px;font-weight:700;color:#fff">
-        【 Google Forms 連携設定 】
+        【 部門別 企画書フォーム 】
       </div>
-
-      <div class="form-group">
-        <label class="form-label required">企画書フォーム URL</label>
-        <div style="display:flex;gap:8px">
-          <input class="form-input text-mono" id="g1-formurl" value="${escHtml(formUrl)}"
-            placeholder="https://docs.google.com/forms/d/e/xxxxxxxx/viewform">
-          <button class="btn btn-sm" onclick="saveG1Urls('${p.id}')">&#128190; 保存</button>
-        </div>
-        <div class="text-xs text-muted mt-4">Google Formsで企画書フォームを作成し、そのURLをここに貼り付けてください</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px">
+        各部門の担当者は自分の部門ボタンを押してフォームを開き、記入・送信してください。<br>
+        <span style="color:var(--accent)">案件名（${escHtml(p.name)}）と管理番号（${p.num}）が自動入力されます。</span>
       </div>
-
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">回答スプレッドシート URL <span class="text-xs text-muted">（任意）</span></label>
-        <div style="display:flex;gap:8px">
-          <input class="form-input text-mono" id="g1-sheeturl" value="${escHtml(sheetUrl)}"
-            placeholder="https://docs.google.com/spreadsheets/d/xxxxxxxx">
-        </div>
-        <div class="text-xs text-muted mt-4">フォームの回答が蓄積されるスプレッドシートのURL（管理者用）</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${deptBtn('営業','営業')}
+        ${deptBtn('開発','開発')}
+        ${deptBtn('品管','品管')}
+        ${deptBtn('知財','知財')}
+        ${deptBtn('購買','購買')}
       </div>
+      ${sheetUrl?`
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <button class="btn btn-sm" onclick="window.open('${escHtml(sheetUrl)}','_blank')">
+          &#128202; 回答スプレッドシートを確認（管理者）
+        </button>
+      </div>`:''}
     </div>
 
-    <!-- フォームを開くボタン -->
-    <div class="card mb-12" style="background:var(--bg2)">
-      <div style="text-align:center;padding:8px 0">
-        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--text)">各部門担当者はこのボタンからフォームを記入してください</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:20px">案件名・管理番号が自動入力された状態でフォームが開きます</div>
-        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-          <button class="btn btn-primary" style="padding:12px 28px;font-size:14px;${!formUrl?'opacity:0.4;cursor:not-allowed':''}"
-            ${!formUrl?'disabled':''} onclick="openGoogleForm('${p.id}')">
-            &#128203; 企画書フォームを開く（別タブ）
-          </button>
-          ${sheetUrl?`<button class="btn" style="padding:12px 20px" onclick="window.open('${escHtml(sheetUrl)}','_blank')">
-            &#128202; 回答スプレッドシートを見る
-          </button>`:''}
-        </div>
-        ${!formUrl?`<div style="margin-top:16px;font-size:12px;color:var(--warn)">&#9888; 上のフォームURLを設定してください</div>`:''}
-      </div>
-    </div>
-
-    <!-- 承認ステータス（手動入力） -->
+    <!-- 承認ステータス -->
     <div class="card mb-12">
       <div style="background:#1a2a4a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:13px;font-weight:700;color:#fff">【 承認ステータス 】</span>
         <span style="font-size:12px;color:#8ab4d4">${approvedCount} / 5 承認済み</span>
       </div>
-
       <div style="font-size:12px;color:var(--text2);margin-bottom:14px">
-        Google Sheetsで各部門の承認が確認できたら、以下で承認ステータスを更新してください
+        スプレッドシートで各部門の回答・承認を確認したら、ここでステータスを更新してください
       </div>
-
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
         ${['開発','品管','知財','購買','営業リーダー'].map(dep=>{
           const cur=depts[dep+'_status']||'—';
@@ -1720,20 +1830,18 @@ function renderStep3(p){
           </div>`;
         }).join('')}
       </div>
-
       ${allApproved
         ?`<div style="margin-top:14px;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.3);border-radius:var(--radius);padding:10px;text-align:center;font-size:13px;color:var(--success);font-weight:700">&#10003; 全部門承認完了 — 構想審査通過</div>`
-        :`<div style="margin-top:10px;font-size:12px;color:var(--text2)">残り <strong style="color:var(--warn)">${5-approvedCount}部門</strong> の承認が必要です。全部門「承認」になると次フェーズへ進めます。</div>`
-      }
+        :`<div style="margin-top:10px;font-size:12px;color:var(--text2)">残り <strong style="color:var(--warn)">${5-approvedCount}部門</strong> の承認が必要です。全部門「承認」になると次フェーズへ進めます。</div>`}
     </div>
 
-    <!-- メモ -->
+    <!-- 管理メモ -->
     <div class="card mb-12">
       <div style="background:#1a2a4a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:12px 20px;font-size:13px;font-weight:700;color:#fff">
         【 管理メモ 】
       </div>
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">承認状況・特記事項メモ <span class="text-xs text-muted">（任意）</span></label>
+        <label class="form-label">差し戻し内容・確認事項メモ <span class="text-xs text-muted">（任意）</span></label>
         <textarea class="form-input form-textarea" id="g1-memo" placeholder="差し戻し内容・修正依頼・確認事項など">${escHtml(d.fields?.memo||'')}</textarea>
       </div>
     </div>
@@ -1755,48 +1863,36 @@ function renderStep3(p){
     </div>
   </div>`;
 }
+// Google Forms entry IDs（事前入力用）
+const G1_FORM_ENTRY = {
+  num:  'entry.1175697382',  // 管理ナンバー
+  name: 'entry.404688606',   // 案件名
+};
 
-function saveG1Urls(pid){
+function openDeptForm(pid, dept){
   const p=state.projects.find(x=>x.id===pid);
   if(!p)return;
-  if(!p.step3)p.step3={dept:{},fields:{}};
-  if(!p.step3.fields)p.step3.fields={};
-  const fu=document.getElementById('g1-formurl');
-  const su=document.getElementById('g1-sheeturl');
-  if(fu) p.step3.fields.formUrl=fu.value.trim();
-  if(su) p.step3.fields.sheetUrl=su.value.trim();
-  saveProjects();
-  document.getElementById('step-content').innerHTML=renderStepContent(p);
-  showToast('URLを保存しました','success');
-}
-
-function openGoogleForm(pid){
-  const p=state.projects.find(x=>x.id===pid);
-  if(!p)return;
-  let url=p.step3?.fields?.formUrl||'';
-  if(!url){showToast('フォームURLを設定してください','error');return;}
-  // Append basic pre-fill if no params already set
+  // System-wide setting takes priority, then per-project fallback
+  const s=state.settings||{};
+  let url=(s.deptForms&&s.deptForms[dept])||p.step3?.fields?.formUrl||'';
+  if(!url){showToast(`${dept}部門のフォームURLが設定されていません。管理者にお知らせください。`,'error');return;}
   try{
     const u=new URL(url);
-    const pre=p.step3?.fields?.prefillEntries||{};
-    if(pre.num) u.searchParams.set(pre.num,p.num);
-    if(pre.name) u.searchParams.set(pre.name,p.name);
-    if(pre.team) u.searchParams.set(pre.team,p.team||'');
+    u.searchParams.set(G1_FORM_ENTRY.num,  p.num);
+    u.searchParams.set(G1_FORM_ENTRY.name, p.name);
     url=u.toString();
   }catch(e){}
   window.open(url,'_blank');
 }
 
+// 後方互換：旧openGoogleFormも残す
+function openGoogleForm(pid){ openDeptForm(pid,'営業'); }
+
 function collectG1Data(p){
   if(!p.step3)p.step3={dept:{},fields:{}};
   if(!p.step3.fields)p.step3.fields={};
-  const f=p.step3.fields;
-  const fu=document.getElementById('g1-formurl');
-  const su=document.getElementById('g1-sheeturl');
   const memo=document.getElementById('g1-memo');
-  if(fu) f.formUrl=fu.value.trim();
-  if(su) f.sheetUrl=su.value.trim();
-  if(memo) f.memo=memo.value;
+  if(memo) p.step3.fields.memo=memo.value;
 }
 
 
@@ -2521,13 +2617,14 @@ function downloadCSV(rows,filename){
 // ===== JSON DATA SYNC =====
 function exportDataJSON(){
   const payload={
-    version:'1.1',
+    version:'1.2',
     exportedAt:new Date().toISOString(),
     exportedBy:state.user?.name||'不明',
     exportedTeam:'__ALL__',
     nextNum:state.nextNum,
     projects:state.projects,
     users:state.users,
+    settings:state.settings,
   };
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const a=document.createElement('a');
@@ -2762,6 +2859,7 @@ function executeImport(data){
     state.projects=data.projects;
     state.nextNum=data.nextNum||state.nextNum;
     if(data.users) state.users=data.users;
+    if(data.settings) state.settings=data.settings;
   } else {
     const existing=new Map(state.projects.map(p=>[p.id,p]));
     data.projects.forEach(p=>existing.set(p.id,p));
@@ -2772,10 +2870,12 @@ function executeImport(data){
       data.users.forEach(u=>eu.set(u.id,u));
       state.users=Array.from(eu.values());
     }
+    if(data.settings) state.settings={...state.settings,...data.settings};
   }
   saveProjects();
   saveNextNum();
   if(data.users) saveUsers(state.users);
+  if(data.settings) saveSettings();
   closeModal();
   showToast(`${data.projects.length}件のデータを読み込みました`,'success');
   state.screen='dashboard';
@@ -2964,6 +3064,7 @@ function bindDashboard(){}
 
 // ===== INIT =====
 state.lastSaved=localStorage.getItem('pgm_lastsaved')||null;
+state.settings=loadSettings();
 // Remove legacy seed admin user if present
 state.users=state.users.filter(u=>u.id!=='u_admin_seed');
 saveUsers(state.users);
