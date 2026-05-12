@@ -1600,186 +1600,141 @@ function renderQuoteCard(pid,q,i){
   </div>`;
 }
 
-// ===== STEP 3 G1 =====
+// ===== STEP 3 G1 — Google Forms連携 =====
 function renderStep3(p){
   const d=p.step3||{dept:{},fields:{}};
   const depts=d.dept||{};
-  const f=d.fields||{};
-  const s1=p.step1||{};
-  const s2=p.step2||{};
-  const allApproved=DEPT_LIST.every(dep=>depts[dep]);
-  const approvedCount=DEPT_LIST.filter(dep=>depts[dep]).length;
+  const approvedCount=['開発','品管','知財','購買','営業リーダー'].filter(dep=>depts[dep+'_status']==='承認').length;
+  const allApproved=approvedCount>=5;
+  const formUrl=d.fields?.formUrl||'';
+  const sheetUrl=d.fields?.sheetUrl||'';
+  const today=new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'});
 
-  // Dept color map
-  const deptColors={営業:'#4c9eff',開発:'#9b59b6',品管:'#2ecc71',知財:'#f39c12',購買:'#e74c3c'};
+  // Build Google Form pre-fill URL if base URL is set
+  const buildFormUrl=()=>{
+    if(!formUrl) return '';
+    try{
+      const u=new URL(formUrl);
+      // Append pre-fill params (entry IDs set after form creation)
+      const pre=d.fields?.prefillEntries||{};
+      if(pre.num) u.searchParams.set(pre.num, p.num);
+      if(pre.name) u.searchParams.set(pre.name, p.name);
+      if(pre.team) u.searchParams.set(pre.team, p.team||'');
+      return u.toString();
+    }catch(e){return formUrl;}
+  };
 
-  // Section header helper
-  const sh=(icon,title)=>`<div style="background:#1a2a4a;border-radius:var(--radius) var(--radius) 0 0;margin:-16px -16px 16px;padding:10px 16px;font-size:12px;font-weight:700;color:#8ab4d4;letter-spacing:0.06em">${icon} 【 ${title} 】</div>`;
+  const deptStatusColor={
+    '承認':'var(--success)','差し戻し':'var(--danger)',
+    '確認中':'var(--warn)','—':'var(--text3)',undefined:'var(--text3)'
+  };
 
   return `
   <div>
     <!-- Header -->
     <div class="card mb-12" style="background:#1a2a4a;border-color:#2a3a5a">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
-        <div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-            <div style="background:rgba(76,158,255,0.2);border:1px solid rgba(76,158,255,0.4);border-radius:6px;padding:4px 12px;font-family:monospace;font-size:13px;font-weight:700;color:var(--accent)">G1</div>
-            <div style="font-size:18px;font-weight:700;color:#fff">企画書 — 構想審査</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:20px">&#128203;</span>
+          <div>
+            <div style="font-size:18px;font-weight:700;color:#fff">企画書 G1</div>
+            <div style="font-size:12px;color:#8ab4d4;margin-top:4px">Google Forms で複数部門が並行記入・承認できます</div>
           </div>
-          <div style="font-size:12px;color:#8ab4d4">5部門（営業・開発・品管・知財・購買）の承認が揃うことで構想審査通過となります</div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:11px;color:#8ab4d4;margin-bottom:4px">承認状況</div>
-          <div style="font-size:22px;font-weight:700;font-family:monospace;color:${allApproved?'var(--success)':'var(--warn)'}">
-            ${approvedCount}<span style="font-size:13px;color:#8ab4d4"> / 5</span>
-          </div>
-          ${allApproved?'<div style="font-size:11px;color:var(--success);margin-top:2px">&#10003; 審査通過条件 達成</div>':''}
+        <div style="text-align:right;font-size:12px;color:#8ab4d4;line-height:1.8">
+          <div>${today}</div>
+          <div>${p.num}</div>
         </div>
       </div>
     </div>
 
-    <!-- 引継ぎ情報（折りたたみ） -->
+    <!-- Google Form リンク設定 -->
     <div class="card mb-12">
-      <div style="background:#1a2a4a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 0;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleG1Inherit('${p.id}')">
-        <span style="font-size:13px;font-weight:700;color:#fff">【 Step1・Step2 引継ぎ情報 】</span>
-        <span style="font-size:12px;color:#8ab4d4" id="g1-inherit-label">${d.inheritOpen!==false?'▲ 非表示':'▼ 表示'}</span>
+      <div style="background:#1a2a4a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:12px 20px;font-size:13px;font-weight:700;color:#fff">
+        【 Google Forms 連携設定 】
       </div>
-      <div id="g1-inherit-body" style="${d.inheritOpen!==false?'':'display:none'};padding-top:16px">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding-top:16px">
-          <div><span class="text-xs text-muted">案件名</span><div class="text-sm mt-4 bold">${escHtml(p.name)}</div></div>
-          <div><span class="text-xs text-muted">プロジェクト名</span><div class="text-sm mt-4">${escHtml(s1.projectName||'-')}</div></div>
-          <div><span class="text-xs text-muted">ペンライトタイプ</span><div class="text-sm mt-4">${escHtml(s1.penType||'-')}</div></div>
-          <div><span class="text-xs text-muted">提出物</span><div class="text-sm mt-4">${escHtml(s1.submitType||'-')}</div></div>
-          <div><span class="text-xs text-muted">販売先</span><div class="text-sm mt-4">${escHtml(s2.client||'-')}</div></div>
-          <div><span class="text-xs text-muted">LOT数量</span><div class="text-sm mt-4">${escHtml(s2.quotes?.[0]?.lot||'-')}</div></div>
-          <div><span class="text-xs text-muted">ターゲットプライス</span><div class="text-sm mt-4">${escHtml(s2.quotes?.[0]?.targetPrice||'-')}</div></div>
-          <div><span class="text-xs text-muted">輸送方法</span><div class="text-sm mt-4">${escHtml(s2.shipMethod||'-')}</div></div>
+
+      <div class="form-group">
+        <label class="form-label required">企画書フォーム URL</label>
+        <div style="display:flex;gap:8px">
+          <input class="form-input text-mono" id="g1-formurl" value="${escHtml(formUrl)}"
+            placeholder="https://docs.google.com/forms/d/e/xxxxxxxx/viewform">
+          <button class="btn btn-sm" onclick="saveG1Urls('${p.id}')">&#128190; 保存</button>
         </div>
+        <div class="text-xs text-muted mt-4">Google Formsで企画書フォームを作成し、そのURLをここに貼り付けてください</div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">回答スプレッドシート URL <span class="text-xs text-muted">（任意）</span></label>
+        <div style="display:flex;gap:8px">
+          <input class="form-input text-mono" id="g1-sheeturl" value="${escHtml(sheetUrl)}"
+            placeholder="https://docs.google.com/spreadsheets/d/xxxxxxxx">
+        </div>
+        <div class="text-xs text-muted mt-4">フォームの回答が蓄積されるスプレッドシートのURL（管理者用）</div>
       </div>
     </div>
 
-    <!-- 5部門承認 -->
+    <!-- フォームを開くボタン -->
+    <div class="card mb-12" style="background:var(--bg2)">
+      <div style="text-align:center;padding:8px 0">
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--text)">各部門担当者はこのボタンからフォームを記入してください</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:20px">案件名・管理番号が自動入力された状態でフォームが開きます</div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-primary" style="padding:12px 28px;font-size:14px;${!formUrl?'opacity:0.4;cursor:not-allowed':''}"
+            ${!formUrl?'disabled':''} onclick="openGoogleForm('${p.id}')">
+            &#128203; 企画書フォームを開く（別タブ）
+          </button>
+          ${sheetUrl?`<button class="btn" style="padding:12px 20px" onclick="window.open('${escHtml(sheetUrl)}','_blank')">
+            &#128202; 回答スプレッドシートを見る
+          </button>`:''}
+        </div>
+        ${!formUrl?`<div style="margin-top:16px;font-size:12px;color:var(--warn)">&#9888; 上のフォームURLを設定してください</div>`:''}
+      </div>
+    </div>
+
+    <!-- 承認ステータス（手動入力） -->
     <div class="card mb-12">
-      <div style="background:#1a2a4a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:12px 20px;font-size:13px;font-weight:700;color:#fff">【 部門承認 】</div>
+      <div style="background:#1a2a4a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;font-weight:700;color:#fff">【 承認ステータス 】</span>
+        <span style="font-size:12px;color:#8ab4d4">${approvedCount} / 5 承認済み</span>
+      </div>
+
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px">
+        Google Sheetsで各部門の承認が確認できたら、以下で承認ステータスを更新してください
+      </div>
+
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
-        ${DEPT_LIST.map(dep=>{
-          const approved=depts[dep];
-          const info=d.approvalInfo?.[dep]||{};
-          const color=deptColors[dep]||'var(--accent)';
-          return `<div style="background:${approved?`${color}18`:'var(--bg3)'};border:1px solid ${approved?color:'var(--border)'};border-radius:var(--radius);padding:14px;text-align:center;transition:all 0.2s">
-            <div style="font-size:13px;font-weight:700;color:${approved?color:'var(--text2)'};margin-bottom:10px">${dep}部門</div>
-            ${approved?`
-              <div style="font-size:20px;margin-bottom:6px">&#10003;</div>
-              <div style="font-size:10px;color:${color};font-weight:700;margin-bottom:4px">承認済み</div>
-              ${info.name?`<div style="font-size:10px;color:var(--text2)">${escHtml(info.name)}</div>`:''}
-              ${info.date?`<div style="font-size:10px;color:var(--text3)">${info.date}</div>`:''}
-              <button style="margin-top:8px;width:100%;padding:4px;border-radius:4px;border:1px solid ${color}40;background:transparent;color:${color};font-size:10px;cursor:pointer" onclick="cancelApproval('${p.id}','${dep}')">取消</button>
-            `:`
-              <div style="font-size:20px;margin-bottom:6px;color:var(--text3)">○</div>
-              <div style="font-size:10px;color:var(--text3);margin-bottom:8px">未承認</div>
-              <button style="width:100%;padding:6px;border-radius:4px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='${color}';this.style.color='${color}'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'" onclick="doApprove('${p.id}','${dep}')">承認する</button>
-            `}
+        ${['開発','品管','知財','購買','営業リーダー'].map(dep=>{
+          const cur=depts[dep+'_status']||'—';
+          const color=deptStatusColor[cur];
+          const ai=d.approvalInfo?.[dep]||{};
+          return `<div style="background:var(--bg3);border:1px solid ${cur==='承認'?'var(--success)':'var(--border)'};border-radius:var(--radius);overflow:hidden">
+            <div style="background:var(--bg2);padding:6px 10px;font-size:11px;font-weight:700;color:${color}">${dep}</div>
+            <div style="padding:8px 10px">
+              <select class="form-input form-select" onchange="updateApprovalStatus('${p.id}','${dep}',this.value)"
+                style="font-size:12px;padding:4px 8px;margin:0;border-color:${color}">
+                ${['—','確認中','承認','差し戻し'].map(o=>`<option value="${o}" ${cur===o?'selected':''}>${o}</option>`).join('')}
+              </select>
+              ${ai.name?`<div style="font-size:10px;color:var(--text2);margin-top:4px">${escHtml(ai.name)} ${escHtml(ai.date||'')}</div>`:''}
+            </div>
           </div>`;
         }).join('')}
       </div>
-      ${allApproved?`
-      <div style="margin-top:16px;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.3);border-radius:var(--radius);padding:12px;text-align:center;font-size:13px;color:var(--success);font-weight:700">
-        &#10003; 5部門すべての承認が完了しました。構想審査通過です。
-      </div>`:`
-      <div style="margin-top:16px;background:rgba(243,156,18,0.06);border:1px solid rgba(243,156,18,0.2);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--text2)">
-        残り <strong style="color:var(--warn)">${5-approvedCount}部門</strong> の承認が必要です。全部門承認後に次フェーズへ進めます。
-      </div>`}
+
+      ${allApproved
+        ?`<div style="margin-top:14px;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.3);border-radius:var(--radius);padding:10px;text-align:center;font-size:13px;color:var(--success);font-weight:700">&#10003; 全部門承認完了 — 構想審査通過</div>`
+        :`<div style="margin-top:10px;font-size:12px;color:var(--text2)">残り <strong style="color:var(--warn)">${5-approvedCount}部門</strong> の承認が必要です。全部門「承認」になると次フェーズへ進めます。</div>`
+      }
     </div>
 
-    <!-- 企画書本体 -->
-    <!-- A: 製品企画概要 -->
-    <div class="card mb-12" style="background:var(--bg2)">
-      ${sh('&#128161;','製品企画概要')}
-      <div class="form-group">
-        <label class="form-label required">製品コンセプト</label>
-        <textarea class="form-input form-textarea" style="min-height:80px" id="g1-concept" placeholder="製品の核心的価値・コンセプトを記述してください">${escHtml(f.concept||'')}</textarea>
-      </div>
-      <div class="form-row">
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label required">ターゲット市場・ユーザー</label>
-          <input class="form-input" id="g1-target" value="${escHtml(f.target||'')}" placeholder="例：ライブ・コンサート用途 / 10〜30代">
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">発売時期・シーズン</label>
-          <input class="form-input" id="g1-season" value="${escHtml(f.season||'')}" placeholder="例：2025年秋冬 / 年末商戦">
-        </div>
-      </div>
-    </div>
-
-    <!-- B: コスト・価格計画 -->
-    <div class="card mb-12" style="background:var(--bg2)">
-      ${sh('&#128200;','コスト・価格計画')}
-      <div class="form-row mb-12">
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">想定売価（税抜）</label>
-          <input class="form-input" id="g1-sellprice" value="${escHtml(f.sellPrice||'')}" placeholder="例：¥1,980">
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">ターゲット製造原価</label>
-          <input class="form-input" id="g1-targetcost" value="${escHtml(f.targetCost||'')}" placeholder="例：¥600以下">
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">目標粗利率</label>
-          <input class="form-input" id="g1-margin" value="${escHtml(f.margin||'')}" placeholder="例：65%以上">
-        </div>
+    <!-- メモ -->
+    <div class="card mb-12">
+      <div style="background:#1a2a4a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:12px 20px;font-size:13px;font-weight:700;color:#fff">
+        【 管理メモ 】
       </div>
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">概算コスト妥当性・根拠</label>
-        <textarea class="form-input form-textarea" id="g1-cost" placeholder="コスト算出の根拠・前提条件などを記載">${escHtml(f.cost||'')}</textarea>
-      </div>
-    </div>
-
-    <!-- C: 法規制・知財チェック -->
-    <div class="card mb-12" style="background:var(--bg2)">
-      ${sh('&#9878;','法規制・知財チェック')}
-      <div class="form-group">
-        <label class="form-label">法規制チェック結果</label>
-        <textarea class="form-input form-textarea" id="g1-legal" placeholder="PSE / RoHS / 電波法 / 輸出規制 / 各国規制 等の確認結果を記載">${escHtml(f.legal||'')}</textarea>
-      </div>
-      <div class="form-row">
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">取得予定認証</label>
-          <input class="form-input" id="g1-cert" value="${escHtml(f.cert||'')}" placeholder="例：PSE / CE / FCC / RoHS">
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">知財・商標確認</label>
-          <input class="form-input" id="g1-ip" value="${escHtml(f.ip||'')}" placeholder="例：商標問題なし / 特許抵触なし確認済み">
-        </div>
-      </div>
-    </div>
-
-    <!-- D: 競合分析 -->
-    <div class="card mb-12" style="background:var(--bg2)">
-      ${sh('&#128269;','競合分析')}
-      <div class="form-group">
-        <label class="form-label">競合品・類似品分析</label>
-        <textarea class="form-input form-textarea" style="min-height:90px" id="g1-compete" placeholder="主要競合品・差別化ポイント・優位性を記述してください">${escHtml(f.compete||'')}</textarea>
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">差別化ポイント</label>
-        <input class="form-input" id="g1-diffpoint" value="${escHtml(f.diffPoint||'')}" placeholder="例：独自RGB発光 / ロゴ印刷対応 / 業界最安値帯">
-      </div>
-    </div>
-
-    <!-- E: リスク・課題 -->
-    <div class="card mb-12" style="background:var(--bg2)">
-      ${sh('&#9888;','リスク・課題')}
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">想定リスク・課題・対応策</label>
-        <textarea class="form-input form-textarea" id="g1-risk" placeholder="例：部材調達リスク / 為替変動 / 競合新製品 / 対応策を含めて記載">${escHtml(f.risk||'')}</textarea>
-      </div>
-    </div>
-
-    <!-- F: 備考 -->
-    <div class="card mb-12" style="background:var(--bg2)">
-      ${sh('&#128203;','備考・特記事項')}
-      <div class="form-group" style="margin-bottom:0">
-        <textarea class="form-input form-textarea" id="g1-notes" placeholder="その他、構想審査に関して共有すべき事項を記載">${escHtml(f.notes||'')}</textarea>
+        <label class="form-label">承認状況・特記事項メモ <span class="text-xs text-muted">（任意）</span></label>
+        <textarea class="form-input form-textarea" id="g1-memo" placeholder="差し戻し内容・修正依頼・確認事項など">${escHtml(d.fields?.memo||'')}</textarea>
       </div>
     </div>
 
@@ -1790,15 +1745,60 @@ function renderStep3(p){
         <button class="btn" onclick="saveStep3('${p.id}')">&#128190; 保存</button>
         <button class="btn" onclick="goBack('${p.id}',3)">&#8592; 見積依頼に戻る</button>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" onclick="exportG1Excel('${p.id}')">&#128202; 企画書 CSV出力</button>
-        <button class="btn btn-primary" ${!allApproved?'disabled style="opacity:0.4;cursor:not-allowed" title="5部門の承認が必要です"':''} onclick="advanceStep('${p.id}',3)" style="font-size:13px;padding:10px 20px">
+      <div>
+        <button class="btn btn-primary"
+          ${!allApproved?'disabled style="opacity:0.4;cursor:not-allowed" title="5部門の承認が必要です"':''}
+          onclick="advanceStep('${p.id}',3)" style="font-size:13px;padding:10px 20px">
           G2 試作品審査へ &#8594;
         </button>
       </div>
     </div>
   </div>`;
 }
+
+function saveG1Urls(pid){
+  const p=state.projects.find(x=>x.id===pid);
+  if(!p)return;
+  if(!p.step3)p.step3={dept:{},fields:{}};
+  if(!p.step3.fields)p.step3.fields={};
+  const fu=document.getElementById('g1-formurl');
+  const su=document.getElementById('g1-sheeturl');
+  if(fu) p.step3.fields.formUrl=fu.value.trim();
+  if(su) p.step3.fields.sheetUrl=su.value.trim();
+  saveProjects();
+  document.getElementById('step-content').innerHTML=renderStepContent(p);
+  showToast('URLを保存しました','success');
+}
+
+function openGoogleForm(pid){
+  const p=state.projects.find(x=>x.id===pid);
+  if(!p)return;
+  let url=p.step3?.fields?.formUrl||'';
+  if(!url){showToast('フォームURLを設定してください','error');return;}
+  // Append basic pre-fill if no params already set
+  try{
+    const u=new URL(url);
+    const pre=p.step3?.fields?.prefillEntries||{};
+    if(pre.num) u.searchParams.set(pre.num,p.num);
+    if(pre.name) u.searchParams.set(pre.name,p.name);
+    if(pre.team) u.searchParams.set(pre.team,p.team||'');
+    url=u.toString();
+  }catch(e){}
+  window.open(url,'_blank');
+}
+
+function collectG1Data(p){
+  if(!p.step3)p.step3={dept:{},fields:{}};
+  if(!p.step3.fields)p.step3.fields={};
+  const f=p.step3.fields;
+  const fu=document.getElementById('g1-formurl');
+  const su=document.getElementById('g1-sheeturl');
+  const memo=document.getElementById('g1-memo');
+  if(fu) f.formUrl=fu.value.trim();
+  if(su) f.sheetUrl=su.value.trim();
+  if(memo) f.memo=memo.value;
+}
+
 
 // ===== GATE COMMON (G2-G5) =====
 const GATE_INFO = {
@@ -2332,20 +2332,75 @@ function collectQuoteData(p){
   });
 }
 
+
+
+function updateApprovalStatus(pid,dept,val){
+  const p=state.projects.find(x=>x.id===pid);
+  if(!p)return;
+  if(!p.step3)p.step3={dept:{},fields:{}};
+  if(!p.step3.dept)p.step3.dept={};
+  if(!p.step3.approvalInfo)p.step3.approvalInfo={};
+  p.step3.dept[dept]=val==='承認';
+  p.step3.dept[dept+'_status']=val;
+  if(val==='承認'){
+    p.step3.approvalInfo[dept]={name:state.user?.name||'',date:new Date().toLocaleDateString('ja-JP')};
+  }
+  saveProjects();
+  // Refresh just the approval status section without full re-render
+  const allApproved=DEPT_LIST.every(dep=>p.step3.dept[dep]);
+  if(allApproved) showToast('全部門承認完了！構想審査通過です','success');
+}
+
 function collectG1Data(p){
   if(!p.step3)p.step3={dept:{},fields:{}};
   if(!p.step3.fields)p.step3.fields={};
   const f=p.step3.fields;
-  const fieldIds={
-    concept:'g1-concept', target:'g1-target', season:'g1-season',
-    sellPrice:'g1-sellprice', targetCost:'g1-targetcost', margin:'g1-margin',
-    cost:'g1-cost', legal:'g1-legal', cert:'g1-cert', ip:'g1-ip',
-    compete:'g1-compete', diffPoint:'g1-diffpoint', risk:'g1-risk', notes:'g1-notes',
+
+  // Text / select fields
+  const textIds={
+    createDate:'g1-createdate', productName:'g1-productname',
+    eigyoTan:'g1-eigyotan', kaihatsuTan:'g1-kaihatsutan',
+    category:'g1-category', sellPrice:'g1-sellprice', cost:'g1-cost',
+    moldCountEigyo:'g1-moldcount-eigyo', moldCost:'g1-moldcost',
+    firstOrder:'g1-firstorder', saleStart:'g1-salestart',
+    concept:'g1-concept', factory:'g1-factory', eigyoMemo:'g1-eigyomemo',
+    spec:'g1-spec', material:'g1-material',
+    dimH:'g1-dim-h', dimW:'g1-dim-w', dimD:'g1-dim-d',
+    colors:'g1-colors', moldCountDev:'g1-moldcount-dev',
+    package:'g1-package', inner:'g1-inner', outer:'g1-outer', devIssue:'g1-devissue',
+    designProduct:'g1-design-product', designPkg:'g1-design-pkg',
+    designManual:'g1-design-manual', designCarton:'g1-design-carton',
+    designComment:'g1-designcomment',
+    legal:'g1-legal', qaStatus:'g1-qastatus', qaComment:'g1-qacomment',
+    trademarkNote:'g1-trademark-note', ipNeedNote:'g1-ipneed-note', ipComment:'g1-ipcomment',
+    supplier:'g1-supplier', leadTime:'g1-leadtime', moq:'g1-moq',
+    origin:'g1-origin', buyComment:'g1-buycomment',
+    refPkg:'g1-ref-pkg', refCompete:'g1-ref-compete', refOther:'g1-ref-other',
   };
-  Object.entries(fieldIds).forEach(([key,id])=>{
+  Object.entries(textIds).forEach(([key,id])=>{
     const el=document.getElementById(id);
     if(el) f[key]=el.value;
   });
+
+  // Radio fields
+  const radioIds={logistics:'g1-logistics', food:'g1-food', elec:'g1-elec',
+    patent:'g1-patent', mimicry:'g1-mimicry', trademark:'g1-trademark',
+    ipNeed:'g1-ipneed', quoteStat:'g1-quotestat'};
+  Object.entries(radioIds).forEach(([key,name])=>{
+    const el=document.querySelector(`input[name="${name}"]:checked`);
+    if(el) f[key]=el.value;
+  });
+
+  // Variation rows
+  const vars=[];
+  document.querySelectorAll('[data-varid]').forEach(el=>{
+    const vid=el.dataset.varid;
+    const field=el.dataset.field;
+    let v=vars.find(x=>x.id===vid);
+    if(!v){v={id:vid,name:'',code:'',jan:''};vars.push(v);}
+    v[field]=el.value;
+  });
+  if(vars.length>0) f.variations=vars;
 }
 
 function collectGateData(p,step){
@@ -2389,51 +2444,9 @@ function setCategoryType(pid,cat){
   bindProject(p);
 }
 
-function toggleG1Inherit(pid){
-  const p=state.projects.find(x=>x.id===pid);
-  if(!p)return;
-  if(!p.step3)p.step3={dept:{},fields:{}};
-  p.step3.inheritOpen=!(p.step3.inheritOpen!==false);
-  const body=document.getElementById('g1-inherit-body');
-  const lbl=document.getElementById('g1-inherit-label');
-  if(body) body.style.display=p.step3.inheritOpen?'':'none';
-  if(lbl) lbl.textContent=p.step3.inheritOpen?'▲ 非表示':'▼ 表示';
-}
 
-function doApprove(pid,dept){
-  const p=state.projects.find(x=>x.id===pid);
-  if(!p)return;
-  if(!p.step3)p.step3={dept:{},fields:{}};
-  if(!p.step3.dept)p.step3.dept={};
-  if(!p.step3.approvalInfo)p.step3.approvalInfo={};
-  p.step3.dept[dept]=true;
-  p.step3.approvalInfo[dept]={
-    name:state.user?.name||'',
-    date:new Date().toLocaleDateString('ja-JP')
-  };
-  saveProjects();
-  document.getElementById('step-content').innerHTML=renderStepContent(p);
-  showToast(`${dept}部門が承認しました`,'success');
-}
 
-function cancelApproval(pid,dept){
-  if(!confirm(`${dept}部門の承認を取り消しますか？`))return;
-  const p=state.projects.find(x=>x.id===pid);
-  if(!p||!p.step3)return;
-  p.step3.dept[dept]=false;
-  if(p.step3.approvalInfo) delete p.step3.approvalInfo[dept];
-  saveProjects();
-  document.getElementById('step-content').innerHTML=renderStepContent(p);
-  showToast(`${dept}部門の承認を取り消しました`,'success');
-}
 
-function toggleApproval(pid,dept){
-  // legacy — redirect to new functions
-  const p=state.projects.find(x=>x.id===pid);
-  if(!p||!p.step3)return;
-  if(p.step3.dept?.[dept]) cancelApproval(pid,dept);
-  else doApprove(pid,dept);
-}
 
 function toggleCheck(pid,gateKey,checkId){
   const p=state.projects.find(x=>x.id===pid);
@@ -2494,48 +2507,6 @@ function exportQuoteExcel(pid){
   (p.step2?.quotes||[]).forEach((q,i)=>rows.push([`VAR-${i+1}`,q.lot,q.targetPrice,q.factory,q.delivery,q.notes]));
   downloadCSV(rows,`見積依頼_${p.num}.csv`);
   showToast('CSV出力しました（実環境ではExcel形式になります）','success');
-}
-function exportG1Excel(pid){
-  const p=state.projects.find(x=>x.id===pid);
-  if(!p)return;
-  const f=p.step3?.fields||{};
-  const dept=p.step3?.dept||{};
-  const ai=p.step3?.approvalInfo||{};
-  const rows=[
-    ['【企画書 G1】',''],
-    ['管理番号',p.num],['案件名',p.name],['チーム',p.team],['作成日',p.createdAt],
-    ['',''],
-    ['【製品企画概要】',''],
-    ['製品コンセプト',f.concept||''],
-    ['ターゲット市場',f.target||''],
-    ['発売時期',f.season||''],
-    ['',''],
-    ['【コスト・価格計画】',''],
-    ['想定売価',f.sellPrice||''],
-    ['ターゲット製造原価',f.targetCost||''],
-    ['目標粗利率',f.margin||''],
-    ['コスト妥当性根拠',f.cost||''],
-    ['',''],
-    ['【法規制・知財チェック】',''],
-    ['法規制チェック結果',f.legal||''],
-    ['取得予定認証',f.cert||''],
-    ['知財・商標確認',f.ip||''],
-    ['',''],
-    ['【競合分析】',''],
-    ['競合品・類似品分析',f.compete||''],
-    ['差別化ポイント',f.diffPoint||''],
-    ['',''],
-    ['【リスク・課題】',''],
-    ['想定リスク・対応策',f.risk||''],
-    ['',''],
-    ['【部門承認状況】',''],
-    ...DEPT_LIST.map(d=>[
-      `${d}部門`,
-      dept[d]?`承認済み（${ai[d]?.name||''}　${ai[d]?.date||''}）`:'未承認'
-    ]),
-  ];
-  downloadCSV(rows,`企画書G1_${p.num}.csv`);
-  showToast('企画書をCSV出力しました','success');
 }
 function exportSpec(pid){showToast('製品仕様書をCSV出力しました（実環境ではExcel形式）','success');}
 function exportInspection(pid){showToast('検査基準書をCSV出力しました（実環境ではExcel形式）','success');}
