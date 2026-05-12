@@ -584,6 +584,7 @@ function renderShell(content){
 function renderSyncBarContent(){
   const ts=state.lastSaved;
   const saved=!state.unsaved;
+  const isAdmin=state.isAdmin;
   let timeStr='未保存';
   if(ts){
     const d=new Date(ts);
@@ -593,17 +594,24 @@ function renderSyncBarContent(){
     <div class="sync-dot ${saved?'saved':'unsaved'}"></div>
     <span>${saved?timeStr:'変更あり — 未保存'}</span>
     <span style="color:var(--text3)">|</span>
-    <span>案件数: ${state.projects.length}</span>
+    <span>案件数: ${state.isAdmin?state.projects.length:(state.projects.filter(p=>p.team===state.user?.team).length)}</span>
     <div class="sync-actions">
-      <button class="sync-btn highlight" onclick="exportDataJSON()" title="全データをJSONファイルで保存（OneDriveフォルダへ配置してください）">
-        <span style="font-size:12pxfont-style:normal">↑</span>JSONエクスポート
-      </button>
-      <button class="sync-btn" onclick="triggerImport()" title="JSONファイルを読み込んで復元">
-        <span style="font-size:12pxfont-style:normal">↓</span>JSONインポート
-      </button>
+      ${isAdmin?`
+        <button class="sync-btn highlight" onclick="showMergeModal()" title="複数ユーザーのJSONをまとめて読み込み・自動マージ" style="border-color:rgba(155,89,182,0.5);color:#9b59b6">
+          &#8645; JSONマージ読込（管理者）
+        </button>
+        <button class="sync-btn highlight" onclick="exportDataJSON()" title="全データをエクスポート">
+          &#8593; 全データエクスポート
+        </button>
+      `:`
+        <button class="sync-btn highlight" onclick="exportMyTeamJSON()" title="自分のチームの案件だけをエクスポート">
+          &#8593; 自チームデータを送る
+        </button>
+      `}
       <input type="file" id="json-import-input" accept=".json" style="display:none" onchange="handleImportFile(event)">
+      <input type="file" id="json-merge-input" accept=".json" multiple style="display:none" onchange="handleMergeFiles(event)">
       <button class="sync-btn" onclick="showDataInfo()" title="データ管理・バックアップ情報">
-        <span style="font-size:12pxfont-style:normal">🗄</span>データ管理
+        &#128260; データ管理
       </button>
     </div>`;
 }
@@ -2545,6 +2553,7 @@ function exportDataJSON(){
     version:'1.1',
     exportedAt:new Date().toISOString(),
     exportedBy:state.user?.name||'不明',
+    exportedTeam:'__ALL__',
     nextNum:state.nextNum,
     projects:state.projects,
     users:state.users,
@@ -2553,10 +2562,159 @@ function exportDataJSON(){
   const a=document.createElement('a');
   const date=new Date().toISOString().slice(0,10).replace(/-/g,'');
   a.href=URL.createObjectURL(blob);
-  a.download=`PGM_data_${date}.json`;
+  a.download=`PGM_全データ_${date}.json`;
   a.click();
-  showToast('JSONをエクスポートしました。OneDriveフォルダに保存してください。','success');
+  showToast('全データをエクスポートしました','success');
 }
+
+// ユーザー用：自チームの案件だけエクスポート
+function exportMyTeamJSON(){
+  const team=state.user?.team||'';
+  const myProjects=state.projects.filter(p=>p.team===team);
+  const payload={
+    version:'1.1',
+    exportedAt:new Date().toISOString(),
+    exportedBy:state.user?.name||'不明',
+    exportedTeam:team,
+    nextNum:state.nextNum,
+    projects:myProjects,
+    users:state.users,
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  const date=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const safeteam=team.replace(/[^\w\u3040-\u9fff]/g,'_');
+  a.href=URL.createObjectURL(blob);
+  a.download=`PGM_${safeteam}_${date}.json`;
+  a.click();
+  showToast(`${team}チームのデータをエクスポートしました（${myProjects.length}件）`,'success');
+}
+
+// 管理者用：複数JSONをマージして読み込むモーダル
+function showMergeModal(){
+  const overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.id='modal-overlay';
+  overlay.innerHTML=`
+  <div class="modal" style="width:560px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">&#8645; JSONマージ読込（管理者）</div>
+        <div class="text-xs text-muted mt-4">複数ユーザーのJSONファイルをまとめて選択し、自動マージします</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px">マージのルール</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text2)">
+          <div style="display:flex;gap:8px"><span style="color:var(--success);flex-shrink:0">✓</span>案件IDが異なる → 両方を保持（追加）</div>
+          <div style="display:flex;gap:8px"><span style="color:var(--warn);flex-shrink:0">&#8635;</span>案件IDが同じ → <strong style="color:var(--text)">より新しいエクスポート日時</strong>のデータを優先</div>
+          <div style="display:flex;gap:8px"><span style="color:var(--accent);flex-shrink:0">&#128100;</span>ユーザー情報も同様にマージ（IDが同じなら新しい方を優先）</div>
+        </div>
+      </div>
+      <div id="merge-file-list" style="min-height:80px;background:var(--bg3);border:2px dashed var(--border2);border-radius:var(--radius);padding:16px;margin-bottom:16px;text-align:center;color:var(--text3);font-size:13px">
+        ファイルが選択されていません
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="document.getElementById('json-merge-input').click()">
+        &#128193; JSONファイルを選択（複数可）
+      </button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" id="merge-execute-btn" disabled onclick="executeMerge()" style="opacity:0.4">
+        &#8645; マージして反映
+      </button>
+    </div>
+  </div>`;
+  overlay.onclick=closeModal;
+  document.body.appendChild(overlay);
+}
+
+// マージ用一時データ
+let _mergeQueue=[];
+
+function handleMergeFiles(e){
+  const files=Array.from(e.target.files||[]);
+  if(!files.length)return;
+  _mergeQueue=[];
+  const listEl=document.getElementById('merge-file-list');
+  const btnEl=document.getElementById('merge-execute-btn');
+  let loaded=0;
+  let html='<div style="text-align:left">';
+  files.forEach((file,i)=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(data.projects&&Array.isArray(data.projects)){
+          _mergeQueue.push({filename:file.name,data});
+          html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span style="color:var(--success)">✓</span>
+            <span style="font-size:12px;flex:1">${file.name}</span>
+            <span style="font-size:11px;color:var(--text2)">${data.exportedTeam||'不明'}チーム / ${data.projects.length}件 / ${data.exportedBy||''}</span>
+          </div>`;
+        } else {
+          html+=`<div style="color:var(--danger);font-size:12px;padding:4px 0">✕ ${file.name}（無効なファイル）</div>`;
+        }
+      }catch(err){
+        html+=`<div style="color:var(--danger);font-size:12px;padding:4px 0">✕ ${file.name}（解析エラー）</div>`;
+      }
+      loaded++;
+      if(loaded===files.length){
+        html+='</div>';
+        if(listEl) listEl.innerHTML=html;
+        if(btnEl){
+          btnEl.disabled=_mergeQueue.length===0;
+          btnEl.style.opacity=_mergeQueue.length>0?'1':'0.4';
+        }
+      }
+    };
+    reader.readAsText(file);
+  });
+  e.target.value='';
+}
+
+function executeMerge(){
+  if(!_mergeQueue.length)return;
+  // Start from current data
+  const projectMap=new Map(state.projects.map(p=>[p.id,{...p,_src:'current',_at:state.lastSaved||''}]));
+  const userMap=new Map(state.users.map(u=>[u.id,u]));
+  let totalAdded=0, totalUpdated=0;
+
+  _mergeQueue.forEach(({data})=>{
+    const srcAt=data.exportedAt||'';
+    (data.projects||[]).forEach(p=>{
+      const existing=projectMap.get(p.id);
+      if(!existing){
+        projectMap.set(p.id,p);
+        totalAdded++;
+      } else {
+        // Compare by exportedAt — newer wins
+        if(!existing._at||srcAt>existing._at){
+          projectMap.set(p.id,{...p,_src:'merged',_at:srcAt});
+          totalUpdated++;
+        }
+      }
+    });
+    (data.users||[]).forEach(u=>{
+      if(!userMap.has(u.id)) userMap.set(u.id,u);
+    });
+  });
+
+  // Clean up internal tracking fields
+  state.projects=Array.from(projectMap.values()).map(p=>{
+    const {_src,_at,...clean}=p; return clean;
+  });
+  state.users=Array.from(userMap.values());
+  saveProjects();
+  saveUsers(state.users);
+  _mergeQueue=[];
+  closeModal();
+  showToast(`マージ完了 — 追加:${totalAdded}件 / 更新:${totalUpdated}件`,'success');
+  render();
+}
+
 
 function triggerImport(){
   document.getElementById('json-import-input')?.click();

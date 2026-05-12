@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>PGM.sys 運用説明書</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans JP','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;font-size:13px;color:#1a1a2e;background:#fff;line-height:1.7}
+.page{max-width:800px;margin:0 auto;padding:32px 40px}
+h1{font-size:22px;font-weight:700;color:#1a2a4a;border-bottom:3px solid #1a2a4a;padding-bottom:10px;margin-bottom:6px}
+h2{font-size:15px;font-weight:700;color:#fff;background:#1a2a4a;padding:8px 14px;border-radius:4px;margin:28px 0 12px}
+h3{font-size:13px;font-weight:700;color:#1a2a4a;border-left:3px solid #4c9eff;padding-left:10px;margin:18px 0 8px}
+p{margin-bottom:10px;color:#333}
+.subtitle{font-size:13px;color:#666;margin-bottom:24px}
+.url{font-family:monospace;background:#f0f4ff;border:1px solid #c0d0f0;border-radius:4px;padding:10px 16px;font-size:14px;font-weight:700;color:#1a2a4a;margin:12px 0;display:block}
+table{width:100%;border-collapse:collapse;margin:10px 0 16px;font-size:12px}
+th{background:#1a2a4a;color:#fff;padding:7px 10px;text-align:left;font-weight:700}
+td{padding:7px 10px;border-bottom:1px solid #e0e4f0;vertical-align:top}
+tr:nth-child(even) td{background:#f8f9ff}
+.step-block{background:#f8f9ff;border:1px solid #d0d8f0;border-radius:6px;padding:14px 18px;margin:10px 0}
+.step-row{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}
+.step-row:last-child{margin-bottom:0}
+.step-num{background:#4c9eff;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px}
+.step-num.green{background:#2ecc71}
+.step-num.orange{background:#f39c12}
+.note{background:#fff8e8;border:1px solid #f0c040;border-radius:4px;padding:10px 14px;margin:12px 0;font-size:12px}
+.warn{background:#fff0f0;border:1px solid #f0a0a0;border-radius:4px;padding:10px 14px;margin:12px 0;font-size:12px}
+.good{background:#f0fff4;border:1px solid #80d0a0;border-radius:4px;padding:10px 14px;margin:12px 0;font-size:12px}
+.btn-img{display:inline-block;background:#1a2a4a;color:#fff;border-radius:4px;padding:2px 10px;font-size:11px;font-weight:700;margin:0 2px}
+.btn-img.green{background:#27ae60}
+.btn-img.orange{background:#e07000}
+.btn-img.purple{background:#8e44ad}
+.flow-diagram{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:14px 0;padding:14px;background:#f8f9ff;border-radius:6px}
+.flow-box{background:#1a2a4a;color:#fff;border-radius:4px;padding:8px 12px;font-size:11px;font-weight:700;text-align:center;min-width:90px}
+.flow-box.user{background:#4c9eff}
+.flow-box.admin{background:#8e44ad}
+.flow-box.store{background:#27ae60}
+.flow-arrow{color:#999;font-size:18px;padding:0 6px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.badge{display:inline-block;background:#eef2ff;border:1px solid #c0c8f0;border-radius:3px;padding:1px 7px;font-size:11px;color:#1a2a4a;font-weight:700;margin:0 2px}
+.page-break{page-break-before:always}
+hr{border:none;border-top:1px solid #e0e4f0;margin:24px 0}
+@media print{
+  body{font-size:11px}
+  .page{padding:20px 24px}
+  h1{font-size:18px}
+  h2{font-size:13px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>PGM.sys 運用説明書</h1>
+<div class="subtitle">製品開発管理システム — チーム利用ガイド　Ver.1.0　2025年</div>
+
+<!-- ===== 1. システム概要 ===== -->
+<h2>1. システム概要</h2>
+
+<p>PGM.sys は、商品開発・調達フローを①作成依頼から⑧製品仕様書まで、ゲート審査方式で管理するブラウザアプリです。</p>
+
+<span class="url">https://lumica-hihara.github.io/pgm-system/</span>
+
+<div class="note">
+  <strong>&#9888; 重要：</strong> このシステムは <strong>Google Chrome</strong> での利用を推奨します。他のブラウザでは正常に動作しない場合があります。
+</div>
+
+<h3>アカウントの種類</h3>
+<table>
+  <tr><th>アカウント</th><th>できること</th><th>パスワード</th></tr>
+  <tr><td><strong>開発進行管理（管理者）</strong></td><td>全チームの案件を閲覧・管理、ユーザー管理、JSONマージ読込</td><td>別途通知</td></tr>
+  <tr><td><strong>各チームユーザー</strong></td><td>自チームの案件のみ作成・更新・閲覧</td><td>登録時に各自設定</td></tr>
+</table>
+
+<!-- ===== 2. 初回セットアップ ===== -->
+<h2>2. 初回セットアップ（ユーザー登録）</h2>
+
+<div class="step-block">
+  <div class="step-row">
+    <div class="step-num">1</div>
+    <div>上記URLをChromeで開き、ブックマークに追加する</div>
+  </div>
+  <div class="step-row">
+    <div class="step-num">2</div>
+    <div>「<strong>新規ユーザー登録</strong>」ボタンをクリック</div>
+  </div>
+  <div class="step-row">
+    <div class="step-num">3</div>
+    <div>名前・チーム名・パスワード（6文字以上）を入力して登録</div>
+  </div>
+  <div class="step-row">
+    <div class="step-num green">4</div>
+    <div>登録したIDでログインして完了</div>
+  </div>
+</div>
+
+<div class="warn">
+  <strong>注意：</strong> ユーザー登録情報はそのPCのブラウザに保存されます。PCを変えた場合は再登録が必要です。または管理者から最新JSONをインポートしてもらうことで引き継げます。
+</div>
+
+<!-- ===== 3. 日常の使い方（ユーザー） ===== -->
+<h2>3. 日常の使い方（一般ユーザー）</h2>
+
+<h3>案件を進める</h3>
+<p>ログイン後、「<strong>進行案件一覧</strong>」に自チームの案件が表示されます。案件をクリックして各フェーズを入力・進行させてください。</p>
+
+<table>
+  <tr><th>フェーズ</th><th>主な操作</th></tr>
+  <tr><td>① 作成依頼</td><td>製品仕様・デザイン情報を入力 → 「見積依頼書へ進む」</td></tr>
+  <tr><td>② 見積依頼</td><td>見積案を追加・入力 → 「企画書へ進む」</td></tr>
+  <tr><td>③ 企画書 G1</td><td>企画書を記入 → 各部門担当者が「承認する」→ 5部門承認で通過</td></tr>
+  <tr><td>④〜⑦ ゲート審査</td><td>チェックリストを確認・完了 → 次フェーズへ</td></tr>
+  <tr><td>⑧ 製品仕様書</td><td>最終仕様を入力 → 「案件完了」</td></tr>
+</table>
+
+<h3>データを管理者に送る（週次）</h3>
+
+<div class="step-block">
+  <div class="step-row">
+    <div class="step-num orange">1</div>
+    <div>画面上部の <span class="btn-img orange">&#8593; 自チームデータを送る</span> ボタンをクリック</div>
+  </div>
+  <div class="step-row">
+    <div class="step-num orange">2</div>
+    <div>「<strong>PGM_チーム名_日付.json</strong>」というファイルが自動ダウンロードされる</div>
+  </div>
+  <div class="step-row">
+    <div class="step-num orange">3</div>
+    <div>そのファイルを <strong>OneDriveの共有フォルダ</strong> に保存する（毎週金曜日が目安）</div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>ポイント：</strong> 「自チームデータを送る」ボタンは<strong>自分のチームの案件だけ</strong>を書き出します。他チームのデータは含まれないため、上書き競合の心配がありません。
+</div>
+
+<!-- ===== 4. 管理者の週次作業 ===== -->
+<h2>4. 管理者の週次作業（毎週月曜日）</h2>
+
+<div class="flow-diagram">
+  <div class="flow-box user">各ユーザーが<br>JSONを送付</div>
+  <div class="flow-arrow">&#8594;</div>
+  <div class="flow-box store">OneDrive<br>共有フォルダ</div>
+  <div class="flow-arrow">&#8594;</div>
+  <div class="flow-box admin">管理者が<br>マージ読込</div>
+  <div class="flow-arrow">&#8594;</div>
+  <div class="flow-box store">全体データ<br>更新完了</div>
+</div>
+
+<div class="step-block">
+  <div class="step-row">
+    <div class="step-num">1</div>
+    <div>管理者IDでログインする</div>
+  </div>
+  <div class="step-row">
+    <div class="step-num">2</div>
+    <div>画面上部の <span class="btn-img purple">&#8645; JSONマージ読込（管理者）</span> ボタンをクリック</div>
+  </div>
+  <div class="step-row">
+    <div class="step-num">3</div>
+    <div>「JSONファイルを選択」をクリックし、OneDriveから<strong>各ユーザーのJSONファイルを複数同時選択</strong>する</div>
+  </div>
+  <div class="step-row">
+    <div class="step-num">4</div>
+    <div>読み込んだファイル一覧（チーム名・件数・担当者）を確認する</div>
+  </div>
+  <div class="step-row">
+    <div class="step-num green">5</div>
+    <div>「<strong>マージして反映</strong>」ボタンをクリック → 自動集約される</div>
+  </div>
+  <div class="step-row">
+    <div class="step-num green">6</div>
+    <div><span class="btn-img green">&#8593; 全データエクスポート</span> で集約後の全データをバックアップとして保存する</div>
+  </div>
+</div>
+
+<h3>マージのルール（自動）</h3>
+<table>
+  <tr><th>ケース</th><th>動作</th></tr>
+  <tr><td>案件IDが異なる（別々の案件）</td><td>両方を保持（追加）</td></tr>
+  <tr><td>案件IDが同じ（同一案件の更新）</td><td>エクスポート日時が<strong>新しい方</strong>を優先</td></tr>
+  <tr><td>新規ユーザーが含まれる</td><td>ユーザー情報も自動追加</td></tr>
+</table>
+
+<div class="good">
+  <strong>&#10003; 競合が起きないポイント：</strong> 各ユーザーは自分のチームの案件しか更新しません。チームが異なれば案件IDも異なるため、基本的に上書き競合は発生しません。
+</div>
+
+<!-- ===== 5. OneDriveフォルダ構成 ===== -->
+<div class="page-break"></div>
+<h2>5. 推奨 OneDriveフォルダ構成</h2>
+
+<div class="step-block" style="font-family:monospace;font-size:12px;line-height:2">
+  OneDrive/<br>
+  &nbsp;&nbsp;└── PGM_共有/<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <strong>送付データ/</strong>　← ユーザーが毎週ここに保存<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── PGM_ホビー_20250117.json<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── PGM_釣具_20250117.json<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── PGM_EP_20250117.json<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <strong>マージ済み/</strong>　← 管理者がマージ後に保存<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── PGM_全データ_20250120.json<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <strong>デザイン素材/</strong>　← 各案件のデザインファイル<br>
+</div>
+
+<!-- ===== 6. 週次スケジュール ===== -->
+<h2>6. 週次スケジュール（推奨）</h2>
+
+<table>
+  <tr><th>曜日</th><th>担当</th><th>作業</th></tr>
+  <tr><td><strong>月〜木</strong></td><td>各チームユーザー</td><td>案件の更新・進行（随時）</td></tr>
+  <tr><td><strong>金曜日</strong></td><td>各チームユーザー</td><td>「自チームデータを送る」→ OneDriveに保存</td></tr>
+  <tr><td><strong>月曜日</strong></td><td>管理者</td><td>全ユーザーのJSONをマージ読込 → 全体確認 → バックアップ保存</td></tr>
+</table>
+
+<!-- ===== 7. トラブルシューティング ===== -->
+<h2>7. よくある質問・トラブル</h2>
+
+<h3>Q. ログインしたら案件が何も表示されない</h3>
+<p>管理者からマージ済みのJSONファイルをもらい、「データ管理」→「セットアップガイド」からインポートしてください。または管理者に「新しいメンバーを追加したい」と伝えてください。</p>
+
+<h3>Q. 自分のチームに案件が増えない（他チームの人が作った案件が見えない）</h3>
+<p>仕様です。各ユーザーは自チームの案件のみ表示されます。管理者は全案件を閲覧できます。</p>
+
+<h3>Q. 同じ案件を複数人が同時に更新してしまった</h3>
+<p>マージ時に「エクスポート日時が新しい方」が優先されます。上書きされた側は失われる可能性があるため、<strong>同一案件の更新は1人が担当する</strong>ルールを設けることを推奨します。</p>
+
+<h3>Q. パスワードを忘れた</h3>
+<p>管理者に連絡してください。管理者は「ユーザー管理」からアカウントを削除し、再登録してもらうことができます。</p>
+
+<h3>Q. PCを変えたらデータが消えた</h3>
+<p>管理者から最新の全データJSONをもらい、「データ管理」→「セットアップガイド」からインポートしてください。</p>
+
+<hr>
+
+<div style="text-align:center;color:#999;font-size:11px;margin-top:8px">
+  PGM.sys 運用説明書 / 製品開発管理チーム / https://lumica-hihara.github.io/pgm-system/
+</div>
+
+</div>
+</body>
+</html>
