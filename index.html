@@ -447,6 +447,8 @@ const PRODUCT_CATEGORIES=[
   {id:'bag',       label:'バッグ類',       icon:'ti-briefcase'},
   {id:'other',     label:'その他',         icon:'ti-dots'},
 ];
+const APP_VERSION = 'v1.3.0';
+
 const PENLIGHT_GROUPS=[
   {group:'新規オリジナル', items:['オリジナル形状（新規）']},
   {group:'既存品｜ブレード系', items:['大閃光ブレード','大閃光ブレード100','ルミエース３']},
@@ -747,8 +749,9 @@ function renderLoginSelect(){
 
     <!-- 環境バナー（最下部） -->
     <div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
-      font-size:12px;color:${envColor};white-space:nowrap">
-      ${envText}
+      font-size:12px;color:${envColor};white-space:nowrap;display:flex;align-items:center;gap:16px">
+      <span>${envText}</span>
+      <span style="opacity:0.5">${APP_VERSION}</span>
     </div>
   </div>`;
 }
@@ -1294,8 +1297,8 @@ function renderStep1(p){
   const isNormal=(d.flowType||'normal')==='normal';
 
   // radio helper
-  const r=(name,val,cur,lbl)=>`<label style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1px solid ${cur===val?'var(--accent)':'var(--border)'};background:${cur===val?'rgba(37,99,235,0.08)':'var(--bg3)'};cursor:pointer;font-size:13px;transition:all 0.15s">
-    <input type="radio" name="${name}" value="${val}" ${cur===val?'checked':''} style="accent-color:var(--accent)"
+  const r=(name,val,cur,lbl)=>`<label style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1px solid ${cur===val?'var(--accent)':'var(--border)'};background:${cur===val?'rgba(37,99,235,0.08)':'#fff'};cursor:pointer;font-size:13px;transition:all 0.15s;user-select:none;position:relative;z-index:1">
+    <input type="radio" name="${name}" value="${val}" ${cur===val?'checked':''} style="accent-color:var(--accent);cursor:pointer;width:14px;height:14px"
       onchange="onStep1RadioChange('${p.id}','${name}',this.value)"> ${lbl}
   </label>`;
 
