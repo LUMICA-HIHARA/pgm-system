@@ -3015,7 +3015,7 @@ function collectStep8Data(p){
 function onStep1RadioChange(pid, radioName, val){
   const p=state.projects.find(x=>x.id===pid);
   if(!p)return;
-  const rerenderFields=['s1-prodtype','s1-submittype','s1-pensize','s1-switch','s1-lightcolor','s1-strap','s1-pentype-select','s1-lightgimmick'];
+  const rerenderFields=['s1-prodtype','s1-submittype','s1-pensize','s1-switch','s1-lightcolor','s1-strap','s1-pentype-select','s1-lightgimmick','s1-mockuptype'];
   if(rerenderFields.includes(radioName)){
     collectStepData(p,1);
     saveProjects();
