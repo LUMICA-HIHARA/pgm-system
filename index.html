@@ -1201,7 +1201,11 @@ function renderDashboard(){
             <td><span style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:2px 10px;font-size:11px;color:var(--text)">${STEPS[p.currentStep]?.labelText||STEPS[p.currentStep]?.label||'-'}</span></td>
             <td>${renderMiniSteps(p.currentStep)}</td>
             <td class="num text-xs">${p.createdAt}</td>
-            <td><button class="btn btn-sm" onclick="event.stopPropagation();openProject('${p.id}')"><span style="font-style:normal">→</span></button></td>
+            <td><div style="display:flex;gap:4px">
+              <button class="btn btn-sm" onclick="event.stopPropagation();openProject('${p.id}')" title="開く"><span style="font-style:normal">→</span></button>
+              <button class="btn btn-sm" onclick="event.stopPropagation();duplicateProject('${p.id}')" title="複製" style="border-color:rgba(37,99,235,0.4);color:var(--accent)">⧉</button>
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();showDangerConfirm('project','${p.id}')" title="案件を削除" style="padding:5px 8px">🗑</button>
+            </div></td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -1370,11 +1374,8 @@ function renderStep1(p){
 
       <!-- Section: 依頼内容（現物見積もり） -->
       <div class="card mb-12" id="s1-req-block">
-        <div style="background:#c0580a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:10px 20px;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:space-between">
-          <span>依頼 #1</span>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-sm" style="border-color:rgba(255,255,255,0.4);color:#fff;font-size:11px" onclick="previewStep1('${p.id}')">&#10066; 複製</button>
-          </div>
+        <div style="background:#c0580a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:10px 20px;font-size:13px;font-weight:700;color:#fff">
+          <span>依頼</span>
         </div>
 
         <!-- 製品タイプ -->
@@ -1410,7 +1411,7 @@ function renderStep1(p){
               <span style="font-size:10px;color:var(--text2)">未定可　<span style="color:var(--text3)">※価格逆算用</span></span>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
-              <input class="form-input" id="s1-moldcount" value="${escHtml(d.moldCount||'')}" placeholder="例：2" style="width:120px">
+              <input type="number" min="0" max="99" class="form-input" id="s1-moldcount" value="${escHtml(d.moldCount||'')}" placeholder="例：2" type="number" min="0" max="99" style="width:100px">
               <button class="btn btn-sm" onclick="setFieldUndef('s1-moldcount')" style="font-size:11px">未定・スキップ</button>
             </div>
           </div>
@@ -1429,6 +1430,7 @@ function renderStep1(p){
         <div style="display:flex;gap:8px">
           <button class="btn" onclick="showDashboard()">&#8962; 案件一覧</button>
           <button class="btn" onclick="saveStep1('${p.id}')">&#128190; 保存</button>
+          <button class="btn btn-danger" onclick="showDangerConfirm('project','${p.id}')" style="font-size:12px">&#128465; 案件を削除</button>
         </div>
         <div id="s1-validation-msg" class="text-xs" style="color:var(--danger);flex:1;text-align:center"></div>
         <div style="display:flex;gap:8px">
@@ -1447,19 +1449,8 @@ function renderStep1(p){
   <div>
     ${commonSections}
     <div class="card mb-12" id="s1-req-block">
-      <div style="background:#c0580a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:10px 20px;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:space-between">
-        <span>依頼 #1</span>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-sm" style="border-color:rgba(255,255,255,0.4);color:#fff;font-size:11px" onclick="previewStep1('${p.id}')"><span style="font-style:normal">⧉</span>複製</button>
-        </div>
-      </div>
-
-    <div class="card mb-12" id="s1-req-block">
-      <div style="background:#c0580a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:10px 20px;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:space-between">
-        <span>依頼 #1</span>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-sm" style="border-color:rgba(255,255,255,0.4);color:#fff;font-size:11px" onclick="previewStep1('${p.id}')"><span style="font-style:normal">⧉</span>複製</button>
-        </div>
+      <div style="background:#c0580a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:10px 20px;font-size:13px;font-weight:700;color:#fff">
+        <span>依頼</span>
       </div>
 
       <!-- 製品タイプ -->
@@ -1531,7 +1522,7 @@ function renderStep1(p){
                 <span style="font-size:10px;color:var(--text2)">未定可　<span style="color:var(--text3)">※価格逆算用</span></span>
               </div>
               <div style="display:flex;align-items:center;gap:10px">
-                <input class="form-input" id="s1-moldcount" value="${escHtml(d.moldCount||'')}" placeholder="例：2" style="width:120px">
+                <input type="number" min="0" max="99" class="form-input" id="s1-moldcount" value="${escHtml(d.moldCount||'')}" placeholder="例：2" type="number" min="0" max="99" style="width:100px">
                 <button class="btn btn-sm" onclick="setFieldUndef('s1-moldcount')" style="font-size:11px">未定・スキップ</button>
               </div>
             </div>
@@ -1630,6 +1621,42 @@ function renderStep1(p){
                   </optgroup>`).join('')}
               </select>
             </div>
+
+            ${d.penType==='オリジナル形状（新規）'?`
+            <div style="background:#f0f4ff;border:1px solid rgba(37,99,235,0.2);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px">
+              <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:12px">▼ オリジナル形状の追加情報</div>
+
+              <div style="background:#fff;border-left:3px solid var(--border2);padding:8px 12px;border-radius:0 var(--radius) var(--radius) 0;margin-bottom:8px">
+                <div style="font-size:12px;font-weight:700;margin-bottom:6px">眩しさ軽減プレート</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  ${r('s1-glareplate','有',d.glarePlate,'有')}
+                  ${r('s1-glareplate','無',d.glarePlate,'無')}
+                  ${r('s1-glareplate','未定',d.glarePlate,'未定')}
+                </div>
+              </div>
+
+              <div style="background:#fff;border-left:3px solid var(--border2);padding:8px 12px;border-radius:0 var(--radius) var(--radius) 0;margin-bottom:8px">
+                <div class="form-row">
+                  <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label text-xs">使用電池の種類</label>
+                    <input class="form-input" id="s1-batterytype" value="${escHtml(d.batteryType||'')}" placeholder="例：単4">
+                  </div>
+                  <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label text-xs">使用電池の数</label>
+                    <input type="number" class="form-input" id="s1-batterycount" value="${escHtml(d.batteryCount||'')}" placeholder="例：3" min="1" max="99" style="width:120px">
+                  </div>
+                </div>
+              </div>
+
+              <div style="background:#fff;border-left:3px solid var(--border2);padding:8px 12px;border-radius:0 var(--radius) var(--radius) 0">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                  <span style="font-size:12px;font-weight:700">《 スイッチ数 》</span>
+                  <span style="font-size:10px;color:var(--danger);font-weight:700">必須（オリジナル時）</span>
+                </div>
+                <input type="number" class="form-input" id="s1-switchcount" value="${escHtml(d.switchCount||'')}" placeholder="例：2" min="1" max="99" style="width:120px">
+              </div>
+            </div>`:''}
+
             <div style="background:var(--bg3);border-left:3px solid var(--accent);padding:8px 12px;border-radius:0 var(--radius) var(--radius) 0;margin-bottom:8px">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
                 <span style="font-size:12px;font-weight:700">《 ペンライトサイズ感 》</span>
@@ -1726,7 +1753,7 @@ function renderStep1(p){
                 <span style="font-size:10px;color:var(--text2)">未定可　<span style="color:var(--text3)">※価格逆算用</span></span>
               </div>
               <div style="display:flex;align-items:center;gap:10px">
-                <input class="form-input" id="s1-moldcount" value="${escHtml(d.moldCount||'')}" placeholder="例：2" style="width:120px">
+                <input type="number" min="0" max="99" class="form-input" id="s1-moldcount" value="${escHtml(d.moldCount||'')}" placeholder="例：2" type="number" min="0" max="99" style="width:100px">
                 <button class="btn btn-sm" onclick="setFieldUndef('s1-moldcount')" style="font-size:11px">未定・スキップ</button>
               </div>
             </div>
@@ -1858,16 +1885,12 @@ function renderStep2(p){
 
     <!-- 見積案 -->
     <div class="card mb-12">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:16px">&#128202;</span>
-          <span style="font-size:15px;font-weight:700">見積案</span>
-        </div>
-        <button class="btn btn-sm btn-primary" onclick="addQuote('${p.id}')"><span style="font-style:normal">+</span>案を追加</button>
+      <div style="background:#c0580a;border-radius:var(--radius) var(--radius) 0 0;margin:-20px -20px 16px;padding:12px 20px;font-size:13px;font-weight:700;color:#fff">
+        見積案
       </div>
       <div id="quotes-container">
         ${quotes.length===0
-          ?`<div style="text-align:center;padding:32px;color:var(--text3);border:1px dashed var(--border);border-radius:var(--radius)">「案を追加」で見積案を作成してください</div>`
+          ?`<div style="text-align:center;padding:32px;color:var(--text3);border:1px dashed var(--border);border-radius:var(--radius)">まだ見積案がありません。案件を複製して見積条件を変更してください。</div>`
           :quotes.map((q,i)=>renderQuoteCard(p.id,q,i)).join('')}
       </div>
     </div>
@@ -1878,26 +1901,57 @@ function renderStep2(p){
         仕様の確認・編集　<span style="font-size:11px;font-weight:400;opacity:0.8">（作成依頼から引継ぎ）</span>
       </div>
       ${quotes.length>0?`<div style="font-size:12px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:6px;color:var(--warn);background:rgba(217,119,6,0.08);border:1px solid rgba(243,156,18,0.25);border-radius:var(--radius);padding:8px 12px"><span style="font-size:14pxfont-style:normal">✏</span><span>デザイン作業中に変更になった項目はここで編集してください</span></div></div>`:''}
-      ${quotes.length===0?`<div class="text-sm text-muted" style="padding:16px 0">見積案を追加すると仕様確認・編集欄が表示されます</div>`:''}
+      ${quotes.length===0?`<div class="text-sm text-muted" style="padding:16px 0">作成依頼の引継ぎ情報が表示されます</div>`:''}
       ${quotes.map((q,qi)=>`
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">
-        <div style="background:#334155;padding:8px 14px;font-size:12px;font-weight:700;color:var(--text2)">
-          依頼 #${qi+1}　${escHtml(q.label||'')} / 提出物：${escHtml(q.submitTypeEdit||s1.submitType||'-')}
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;padding:14px">
+
+        <!-- デザイン概要イメージ -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid var(--border)">【 デザイン概要イメージ 】</div>
+          <div class="form-group mb-12">
+            ${(()=>{
+              const mc=q.moldCountEdit||s1.moldCount||'';
+              const req=mc&&mc!=='未定'&&mc.trim()!==''&&mc!=='0';
+              return `<label class="form-label text-xs">完成デザインデータの添付　
+                ${req?`<span style="font-size:10px;color:var(--danger);font-weight:700">必須（金型数が入力されています）</span>`:`<span class="text-xs text-muted">（任意）</span>`}
+              </label>
+              <input class="form-input text-mono" data-qid="${q.id}" data-field="finalDesignFile"
+                value="${escHtml(q.finalDesignFile||'')}" placeholder="ファイル名またはOneDriveパス・URL"
+                style="${req&&!q.finalDesignFile?'border-color:var(--warn);background:rgba(217,119,6,0.04)':''}">
+              ${req&&!q.finalDesignFile?`<div style="font-size:11px;color:var(--warn);margin-top:4px">金型数が入力されている場合はデザインデータの添付が必要です</div>`:''}`;
+            })()}
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label text-xs">追加情報・概要テキスト</label>
+            <textarea class="form-input form-textarea" style="min-height:60px" data-qid="${q.id}" data-field="designTextEdit"
+              placeholder="デザインのイメージ等">${escHtml(q.designTextEdit||s1.designText||'')}</textarea>
+          </div>
         </div>
-        <div style="padding:14px">
+
+        <!-- ペンライト仕様 -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid var(--border)">【 ペンライト仕様 】</div>
+
           <div class="form-row mb-12">
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">製品タイプ</label>
+              <label class="form-label">《 ペンライトタイプ 》</label>
               <select class="form-input form-select" data-qid="${q.id}" data-field="prodTypeEdit">
-                <option value="">選択してください</option>
-                ${['LUMI×Air','スタンダード','ストロボ','シングルカラー','マルチカラー','RGB','レインボー'].map(t=>`<option value="${t}" ${(q.prodTypeEdit||s1.penType)===t?'selected':''}>${t}</option>`).join('')}
+                <option value="">― 選択してください ―</option>
+                ${PENLIGHT_GROUPS.map(g=>`
+                  <optgroup label="${g.group}">
+                    ${g.items.map(t=>`<option value="${t}" ${(q.prodTypeEdit||s1.penType)===t?'selected':''}>${t}</option>`).join('')}
+                  </optgroup>`).join('')}
               </select>
             </div>
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">デザイン概要・変更点</label>
-              <textarea class="form-input form-textarea" style="min-height:60px" data-qid="${q.id}" data-field="designChange" placeholder="デザイン概要や変更点を記載">${escHtml(q.designChange||'')}</textarea>
+              <label class="form-label text-xs">《 ペンライトサイズ感 》</label>
+              <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+                ${['指定あり','指定なし'].map(v=>`<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid ${(q.penSizeEdit||s1.penSize)===v?'var(--accent)':'var(--border)'};background:${(q.penSizeEdit||s1.penSize)===v?'rgba(37,99,235,0.1)':'var(--bg2)'};cursor:pointer;font-size:12px"><input type="radio" name="penSizeEdit_${q.id}" value="${v}" ${(q.penSizeEdit||s1.penSize)===v?'checked':''} style="accent-color:var(--accent)"> ${v}</label>`).join('')}
+              </div>
+              ${(q.penSizeEdit||s1.penSize)==='指定あり'?`<input class="form-input mt-8" data-qid="${q.id}" data-field="penHeightEdit" value="${escHtml(q.penHeightEdit||s1.penHeight||'')}" placeholder="例：280mm" style="width:140px">`:''}
             </div>
           </div>
+
           <div class="form-row mb-12">
             <div>
               <label class="form-label text-xs">スイッチの機能</label>
@@ -1906,35 +1960,70 @@ function renderStep2(p){
               </div>
             </div>
             <div>
+              <label class="form-label text-xs">発光色数</label>
+              <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+                ${['通常品と同じ','オリジナル'].map(v=>`<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid ${(q.lightColorEdit||s1.lightColor)===v?'var(--accent)':'var(--border)'};background:${(q.lightColorEdit||s1.lightColor)===v?'rgba(37,99,235,0.1)':'var(--bg2)'};cursor:pointer;font-size:12px"><input type="radio" name="lightColorEdit_${q.id}" value="${v}" ${(q.lightColorEdit||s1.lightColor)===v?'checked':''} style="accent-color:var(--accent)"> ${v}</label>`).join('')}
+              </div>
+              ${(q.lightColorEdit||s1.lightColor)==='オリジナル'?`
+              <div style="margin-top:8px;border-left:3px solid var(--warn);padding-left:10px">
+                <div class="text-xs text-muted mb-4">色の内容</div>
+                <textarea class="form-input form-textarea" style="min-height:60px" data-qid="${q.id}" data-field="lightColorDetailEdit"
+                  placeholder="色の内容を入力">${escHtml(q.lightColorDetailEdit||s1.lightColorDetail||'')}</textarea>
+              </div>`:''}
+            </div>
+          </div>
+
+          <div class="form-row mb-12">
+            <div>
               <label class="form-label text-xs">グリップ部印刷</label>
               <div style="display:flex;gap:6px;margin-top:4px">
                 ${['有','無'].map(v=>`<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid ${(q.gripEdit||s1.grip)===v?'var(--accent)':'var(--border)'};background:${(q.gripEdit||s1.grip)===v?'rgba(37,99,235,0.1)':'var(--bg2)'};cursor:pointer;font-size:12px"><input type="radio" name="gripEdit_${q.id}" value="${v}" ${(q.gripEdit||s1.grip)===v?'checked':''} style="accent-color:var(--accent)"> ${v}</label>`).join('')}
               </div>
             </div>
-          </div>
-          <div class="form-row mb-12">
             <div>
-              <label class="form-label text-xs">発光色数</label>
+              <label class="form-label text-xs">ストラップ</label>
               <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
-                ${['通常品と同じ','オリジナル'].map(v=>`<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid ${(q.lightColorEdit||s1.lightColor)===v?'var(--accent)':'var(--border)'};background:${(q.lightColorEdit||s1.lightColor)===v?'rgba(37,99,235,0.1)':'var(--bg2)'};cursor:pointer;font-size:12px"><input type="radio" name="lightColorEdit_${q.id}" value="${v}" ${(q.lightColorEdit||s1.lightColor)===v?'checked':''} style="accent-color:var(--accent)"> ${v}</label>`).join('')}
+                ${['有','無','未定'].map(v=>`<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid ${(q.strapEdit||s1.strap)===v?'var(--accent)':'var(--border)'};background:${(q.strapEdit||s1.strap)===v?'rgba(37,99,235,0.1)':'var(--bg2)'};cursor:pointer;font-size:12px"><input type="radio" name="strapEdit_${q.id}" value="${v}" ${(q.strapEdit||s1.strap)===v?'checked':''} style="accent-color:var(--accent)"> ${v}</label>`).join('')}
               </div>
             </div>
-            <div>
-              <label class="form-label text-xs">パッケージ</label>
-              <input class="form-input" style="margin-top:4px" data-qid="${q.id}" data-field="packageEdit" value="${escHtml(q.packageEdit||s1.package||'')}" placeholder="例：OPP">
-            </div>
           </div>
+
           <div class="form-row">
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label text-xs">金型数　<span class="text-xs text-muted">（作成依頼から引継ぎ・変更可）</span></label>
-              <input class="form-input" data-qid="${q.id}" data-field="moldCountEdit" value="${escHtml(q.moldCountEdit||s1.moldCount||'')}" placeholder="例：2">
+              <label class="form-label text-xs">パッケージ</label>
+              <input class="form-input" data-qid="${q.id}" data-field="packageEdit" value="${escHtml(q.packageEdit||s1.package||'')}" placeholder="例：OPP袋＋ペラ紙">
             </div>
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label text-xs">完成デザインデータの添付　<span class="text-xs text-muted">（任意）</span></label>
-              <input class="form-input text-mono" data-qid="${q.id}" data-field="finalDesignFile" value="${escHtml(q.finalDesignFile||'')}" placeholder="ファイル名またはOneDriveパス・URL">
+              <label class="form-label text-xs">デザイン概要・変更点メモ</label>
+              <textarea class="form-input form-textarea" style="min-height:50px" data-qid="${q.id}" data-field="designChange" placeholder="デザイン概要や変更点を記載">${escHtml(q.designChange||'')}</textarea>
             </div>
           </div>
         </div>
+
+        <!-- 金型・成型関連 -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid var(--border)">【 金型・成型関連 】</div>
+          <div class="form-group mb-12">
+            <label class="form-label text-xs">金型数　<span class="text-xs text-muted">（変更可）</span></label>
+            <input type="number" min="0" max="99" class="form-input" data-qid="${q.id}" data-field="moldCountEdit"
+              value="${escHtml(q.moldCountEdit||s1.moldCount||'')}" placeholder="例：2" style="width:120px">
+          </div>
+          <div style="display:flex;gap:32px;flex-wrap:wrap">
+            <div>
+              <div class="text-xs text-muted mb-8">メッキ</div>
+              <div style="display:flex;gap:6px">
+                ${['可','不可','未定'].map(v=>`<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid ${(q.mekkiEdit||s1.mekki)===v?'var(--accent)':'var(--border)'};background:${(q.mekkiEdit||s1.mekki)===v?'rgba(37,99,235,0.1)':'var(--bg2)'};cursor:pointer;font-size:12px"><input type="radio" name="mekkiEdit_${q.id}" value="${v}" ${(q.mekkiEdit||s1.mekki)===v?'checked':''} style="accent-color:var(--accent)"> ${v}</label>`).join('')}
+              </div>
+            </div>
+            <div>
+              <div class="text-xs text-muted mb-8">塗装</div>
+              <div style="display:flex;gap:6px">
+                ${['可','不可','未定'].map(v=>`<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid ${(q.paintEdit||s1.paint)===v?'var(--accent)':'var(--border)'};background:${(q.paintEdit||s1.paint)===v?'rgba(37,99,235,0.1)':'var(--bg2)'};cursor:pointer;font-size:12px"><input type="radio" name="paintEdit_${q.id}" value="${v}" ${(q.paintEdit||s1.paint)===v?'checked':''} style="accent-color:var(--accent)"> ${v}</label>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>`).join('')}
     </div>
 
@@ -1957,65 +2046,57 @@ function renderStep2(p){
 }
 
 function renderQuoteCard(pid,q,i){
-  return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden">
-    <div style="background:#c0580a;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="color:#fff;font-size:13px;font-weight:700">案 ${i+1}</span>
-        <input style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:3px 10px;color:#fff;font-size:12px;font-family:inherit;outline:none;width:220px" data-qid="${q.id}" data-field="label" value="${escHtml(q.label||'')}" placeholder="案の識別名（例：メッキあり・金型3）">
+  return `<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;padding:16px">
+    <div class="form-group mb-12">
+      <label class="form-label text-xs">案の識別名　<span class="text-xs text-muted">（任意）</span></label>
+      <input class="form-input" data-qid="${q.id}" data-field="label" value="${escHtml(q.label||'')}" placeholder="例：メッキあり・金型3">
+    </div>
+    <div class="form-row-3 mb-12">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">成型法　<span class="text-xs text-muted">（任意）</span></label>
+        <input class="form-input" data-qid="${q.id}" data-field="molding" value="${escHtml(q.molding||'')}" placeholder="例：インジェクション成型">
       </div>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-sm" style="border-color:rgba(255,255,255,0.4);color:#fff;font-size:11px" onclick="duplicateQuote('${pid}','${q.id}')"><span style="font-style:normal">⧉</span>複製</button>
-        <button class="btn btn-sm" style="border-color:rgba(255,255,255,0.4);color:#fff;font-size:11px" onclick="removeQuote('${pid}','${q.id}')"><span style="font-style:normal">✕</span>削除</button>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label required">LOT 数量</label>
+        <input class="form-input" data-qid="${q.id}" data-field="lot" value="${escHtml(q.lot||'')}" placeholder="例：5000">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">ターゲットプライス　<span class="text-xs text-muted">（任意）</span></label>
+        <input class="form-input" data-qid="${q.id}" data-field="targetPrice" value="${escHtml(q.targetPrice||'')}" placeholder="例：1,500以下 / 個">
       </div>
     </div>
-    <div style="padding:14px">
-      <div class="form-row-3 mb-12">
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">成型法　<span class="text-xs text-muted">（任意）</span></label>
-          <input class="form-input" data-qid="${q.id}" data-field="molding" value="${escHtml(q.molding||'')}" placeholder="例：インジェクション成型">
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label required">LOT 数量</label>
-          <input class="form-input" data-qid="${q.id}" data-field="lot" value="${escHtml(q.lot||'')}" placeholder="例：5000">
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">ターゲットプライス　<span class="text-xs text-muted">（任意）</span></label>
-          <input class="form-input" data-qid="${q.id}" data-field="targetPrice" value="${escHtml(q.targetPrice||'')}" placeholder="例：1,500以下 / 個">
+    <div class="form-row mb-12">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">希望工場　<span class="text-xs text-muted">（任意）</span></label>
+        <input class="form-input" data-qid="${q.id}" data-field="factory" value="${escHtml(q.factory||'')}" placeholder="例：大連、kinoka">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">販売納期（ETA）</label>
+        <input type="date" class="form-input" data-qid="${q.id}" data-field="delivery" value="${q.delivery||''}">
+      </div>
+    </div>
+    <div class="form-group mb-12">
+      <label class="form-label">カートン入数</label>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px">
+        <span class="text-sm text-muted">インナー入数</span>
+        <input class="form-input" data-qid="${q.id}" data-field="innerQty" value="${escHtml(q.innerQty||'')}" placeholder="例：12" style="width:90px">
+        <span class="text-sm">個</span>
+        <span class="text-sm text-muted" style="margin-left:8px">アウター入数</span>
+        <input class="form-input" data-qid="${q.id}" data-field="outerQty" value="${escHtml(q.outerQty||'')}" placeholder="例：48" style="width:90px">
+        <span class="text-sm">個</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:32px;flex-wrap:wrap">
+      <div>
+        <div class="text-xs text-muted mb-8">メッキ</div>
+        <div style="display:flex;gap:6px">
+          ${['可','不可','未定'].map(v=>`<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid ${q.mekki===v?'var(--accent)':'var(--border)'};background:${q.mekki===v?'rgba(37,99,235,0.1)':'var(--bg2)'};cursor:pointer;font-size:12px"><input type="radio" name="mekki_${q.id}" value="${v}" ${q.mekki===v?'checked':''} style="accent-color:var(--accent)"> ${v}</label>`).join('')}
         </div>
       </div>
-      <div class="form-row mb-12">
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">希望工場　<span class="text-xs text-muted">（任意）</span></label>
-          <input class="form-input" data-qid="${q.id}" data-field="factory" value="${escHtml(q.factory||'')}" placeholder="例：大連、kinoka">
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">販売納期（ETA）</label>
-          <input type="date" class="form-input" data-qid="${q.id}" data-field="delivery" value="${q.delivery||''}">
-        </div>
-      </div>
-      <div class="form-group mb-12">
-        <label class="form-label">カートン入数</label>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px">
-          <span class="text-sm text-muted">インナー入数</span>
-          <input class="form-input" data-qid="${q.id}" data-field="innerQty" value="${escHtml(q.innerQty||'')}" placeholder="例：12" style="width:90px">
-          <span class="text-sm">個</span>
-          <span class="text-sm text-muted" style="margin-left:8px">アウター入数</span>
-          <input class="form-input" data-qid="${q.id}" data-field="outerQty" value="${escHtml(q.outerQty||'')}" placeholder="例：48" style="width:90px">
-          <span class="text-sm">個</span>
-        </div>
-      </div>
-      <div style="display:flex;gap:32px;flex-wrap:wrap">
-        <div>
-          <div class="text-xs text-muted mb-8">メッキ</div>
-          <div style="display:flex;gap:6px">
-            ${['可','不可','未定'].map(v=>`<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid ${q.mekki===v?'var(--accent)':'var(--border)'};background:${q.mekki===v?'rgba(37,99,235,0.1)':'var(--bg2)'};cursor:pointer;font-size:12px"><input type="radio" name="mekki_${q.id}" value="${v}" ${q.mekki===v?'checked':''} style="accent-color:var(--accent)"> ${v}</label>`).join('')}
-          </div>
-        </div>
-        <div>
-          <div class="text-xs text-muted mb-8">塗装</div>
-          <div style="display:flex;gap:6px">
-            ${['可','不可','未定'].map(v=>`<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid ${q.paint===v?'var(--accent)':'var(--border)'};background:${q.paint===v?'rgba(37,99,235,0.1)':'var(--bg2)'};cursor:pointer;font-size:12px"><input type="radio" name="paint_${q.id}" value="${v}" ${q.paint===v?'checked':''} style="accent-color:var(--accent)"> ${v}</label>`).join('')}
-          </div>
+      <div>
+        <div class="text-xs text-muted mb-8">塗装</div>
+        <div style="display:flex;gap:6px">
+          ${['可','不可','未定'].map(v=>`<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid ${q.paint===v?'var(--accent)':'var(--border)'};background:${q.paint===v?'rgba(37,99,235,0.1)':'var(--bg2)'};cursor:pointer;font-size:12px"><input type="radio" name="paint_${q.id}" value="${v}" ${q.paint===v?'checked':''} style="accent-color:var(--accent)"> ${v}</label>`).join('')}
         </div>
       </div>
     </div>
@@ -2152,6 +2233,7 @@ function renderStep3(p){
         <button class="btn" onclick="showDashboard()">&#8962; 案件一覧</button>
         <button class="btn" onclick="saveStep3('${p.id}')">&#128190; 保存</button>
         <button class="btn" onclick="goBack('${p.id}',3)">&#8592; 見積依頼に戻る</button>
+        <button class="btn btn-danger" onclick="showDangerConfirm('project','${p.id}')" style="font-size:12px">&#128465; 案件を削除</button>
       </div>
       <div>
         <button class="btn btn-primary"
@@ -2452,7 +2534,8 @@ function getFileList(p, fieldKey){
   if(!p.step1) p.step1={};
   if(!p.step1.fileLists) p.step1.fileLists={};
   if(!p.step1.fileLists[fieldKey]||p.step1.fileLists[fieldKey].length===0){
-    p.step1.fileLists[fieldKey]=[{id:'f'+Date.now(),url:''}];
+    // IDにfieldKeyを含めて他フィールドと衝突しないようにする
+    p.step1.fileLists[fieldKey]=[{id:fieldKey+'_'+Date.now(),url:''}];
   }
   return p.step1.fileLists[fieldKey];
 }
@@ -2463,7 +2546,7 @@ function addFileItem(pid, fieldKey){
   if(!p.step1) p.step1={};
   if(!p.step1.fileLists) p.step1.fileLists={};
   if(!p.step1.fileLists[fieldKey]) p.step1.fileLists[fieldKey]=[];
-  const newItem={id:'f'+Date.now(), url:''};
+  const newItem={id:fieldKey+'_'+Date.now(), url:''};
   p.step1.fileLists[fieldKey].push(newItem);
   saveProjects();
   // Re-render just the file list
@@ -2508,12 +2591,10 @@ function onFileInputChange(pid, fieldKey, fileId, val){
 // collectStepData時にfileLists内のURLを収集
 function collectFileLists(p){
   if(!p.step1?.fileLists) return;
-  document.querySelectorAll('[id^="fileinput-"]').forEach(el=>{
-    const fileId=el.id.replace('fileinput-','');
-    // Find which fieldKey this belongs to
-    Object.entries(p.step1.fileLists).forEach(([key, list])=>{
-      const file=list.find(f=>f.id===fileId);
-      if(file) file.url=el.value;
+  Object.entries(p.step1.fileLists).forEach(([key, list])=>{
+    list.forEach(file=>{
+      const el=document.getElementById('fileinput-'+file.id);
+      if(el) file.url=el.value;
     });
   });
 }
@@ -2837,6 +2918,8 @@ function collectStepData(p,step){
       concept:'s1-concept', link:'s1-link', refFile:'s1-reffile',
       designFile:'s1-designfile', designText:'s1-designtext',
       penType:'s1-pentype', penHeight:'s1-penheight',
+      batteryType:'s1-batterytype', batteryCount:'s1-batterycount',
+      switchCount:'s1-switchcount',
       switchDetail:'s1-switchdetail', lightColorDetail:'s1-lightcolordetail',
       strapPrintColor:'s1-strapprintcolor',
       lightGimmickCount:'s1-lightgimmickcount',
@@ -3020,16 +3103,25 @@ function onStep1RadioChange(pid, radioName, val){
   if(!p){console.warn('onStep1RadioChange: project not found',pid);return;}
   const rerenderFields=['s1-prodtype','s1-submittype','s1-pensize','s1-switch','s1-lightcolor','s1-strap','s1-pentype-select','s1-lightgimmick','s1-mockuptype'];
   if(rerenderFields.includes(radioName)){
-    // ラジオの値を先にstateに反映してから再描画
+    // ① まず現在のフォーム内容を全て収集して保存（テキスト・数値が消えないように）
+    collectStepData(p,1);
+
+    // ② その上でラジオの新しい値を上書き
     if(!p.step1) p.step1={};
     const radioMap={
       's1-prodtype':'prodType','s1-submittype':'submitType','s1-pensize':'penSize',
       's1-switch':'switchType','s1-lightcolor':'lightColor','s1-grip':'grip',
       's1-strap':'strap','s1-strapprint':'strapPrint','s1-mekki':'mekki','s1-paint':'paint',
       's1-mockuptype':'mockupType','s1-lightgimmick':'lightGimmick',
+      's1-pentype-select':'penType','s1-glareplate':'glarePlate',
     };
     const key=radioMap[radioName];
     if(key) p.step1[key]=val;
+    // selectの場合はDOM上の値も取得して確実に反映
+    if(radioName==='s1-pentype-select'){
+      const el=document.getElementById('s1-pentype');
+      if(el) p.step1.penType=el.value;
+    }
     saveProjects();
     document.getElementById('step-content').innerHTML=renderStepContent(p);
   }
@@ -3444,10 +3536,10 @@ function showDataInfo(){
         </div>
       </div>
       <div class="spec-section" style="border-color:rgba(231,76,60,0.3)">
-        <div class="spec-section-title" style="color:var(--danger)"><span style="font-style:normal">🗑</span>危険な操作</div>
+        <div class="spec-section-title" style="color:var(--danger)">🗑 危険な操作</div>
         <div class="flex-between">
           <div class="text-sm text-muted">ブラウザ内のデータをすべて削除します（元に戻せません）</div>
-          <button class="btn btn-sm btn-danger" onclick="clearAllData()"><span style="font-style:normal">🗑</span>全データ削除</button>
+          <button class="btn btn-sm btn-danger" onclick="closeModal();showDangerConfirm('alldata',null)">🗑 全データ削除</button>
         </div>
       </div>
     </div>
@@ -3464,7 +3556,6 @@ function showDataInfo(){
 }
 
 function clearAllData(){
-  if(!confirm('本当に全データを削除しますか？この操作は元に戻せません。'))return;
   localStorage.removeItem('pgm_projects');
   localStorage.removeItem('pgm_nextnum');
   localStorage.removeItem('pgm_lastsaved');
@@ -3475,9 +3566,139 @@ function clearAllData(){
   state.users=loadUsers();
   saveProjects();
   closeModal();
-  showToast('データを削除しました','error');
+  showToast('全データを削除しました','error');
   render();
 }
+
+// ===== 危険な操作：確認＋パスワード入力モーダル =====
+function showDangerConfirm(type, pid){
+  const isAllData = type==='alldata';
+  const targetName = isAllData
+    ? 'すべてのデータ'
+    : `案件「${state.projects.find(x=>x.id===pid)?.name||''}」`;
+
+  const overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.id='danger-modal-overlay';
+  overlay.innerHTML=`
+  <div class="modal" style="width:460px;border:2px solid var(--danger)" onclick="event.stopPropagation()">
+    <div class="modal-header" style="background:rgba(220,38,38,0.06)">
+      <div>
+        <div class="modal-title" style="color:var(--danger)">⚠ 危険な操作 — 削除の確認</div>
+        <div class="text-xs text-muted mt-4">この操作は元に戻せません</div>
+      </div>
+      <button class="modal-close" onclick="closeDangerModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- 削除対象の明示 -->
+      <div style="background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.3);border-radius:var(--radius);padding:14px 16px;margin-bottom:20px">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:4px">削除対象：</div>
+        <div style="font-size:15px;font-weight:700;color:var(--danger)">${targetName}</div>
+        ${isAllData?`<div style="font-size:12px;color:var(--text2);margin-top:6px">案件データ・ユーザー情報・すべての設定が失われます</div>`:`<div style="font-size:12px;color:var(--text2);margin-top:6px">この案件のすべての入力内容が失われます</div>`}
+      </div>
+
+      <!-- ステップ1: 確認チェック -->
+      <div style="margin-bottom:16px">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px">
+          <input type="checkbox" id="danger-check" style="margin-top:2px;width:16px;height:16px;accent-color:var(--danger);cursor:pointer"
+            onchange="document.getElementById('danger-pw-section').style.display=this.checked?'block':'none'">
+          <span>削除内容を理解しました。<strong style="color:var(--danger)">${targetName}</strong>を削除します。</span>
+        </label>
+      </div>
+
+      <!-- ステップ2: パスワード入力（チェック後に表示） -->
+      <div id="danger-pw-section" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px">管理者パスワードを入力してください</div>
+        <input type="password" class="form-input" id="danger-pw-input" placeholder="パスワードを入力"
+          onkeydown="if(event.key==='Enter')executeDangerAction('${type}','${pid||''}')">
+        <div id="danger-pw-error" style="font-size:11px;color:var(--danger);margin-top:6px;min-height:16px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeDangerModal()">キャンセル</button>
+      <button class="btn btn-danger" onclick="executeDangerAction('${type}','${pid||''}')"
+        style="font-size:13px;padding:10px 20px">
+        &#128465; 削除を実行する
+      </button>
+    </div>
+  </div>`;
+  overlay.onclick=closeDangerModal;
+  document.body.appendChild(overlay);
+}
+
+function closeDangerModal(){
+  const el=document.getElementById('danger-modal-overlay');
+  if(el) el.remove();
+}
+
+function executeDangerAction(type, pid){
+  // チェック確認
+  const check=document.getElementById('danger-check');
+  if(!check||!check.checked){
+    const err=document.getElementById('danger-pw-error');
+    if(err) err.textContent='確認チェックボックスをオンにしてください';
+    return;
+  }
+
+  // パスワード確認
+  const pwInput=document.getElementById('danger-pw-input');
+  const pw=pwInput?pwInput.value:'';
+  const customHash=state.settings?.adminPwHash;
+  const defaultHash=hashSync('pgm-admin');
+  const valid=customHash?hashSync(pw)===customHash:hashSync(pw)===defaultHash;
+
+  if(!valid){
+    const err=document.getElementById('danger-pw-error');
+    if(err) err.textContent='パスワードが違います';
+    if(pwInput) pwInput.focus();
+    return;
+  }
+
+  closeDangerModal();
+
+  if(type==='alldata'){
+    clearAllData();
+  } else if(type==='project'){
+    deleteProject(pid);
+  }
+}
+
+function deleteProject(pid){
+  const p=state.projects.find(x=>x.id===pid);
+  if(!p) return;
+  const name=p.name;
+  state.projects=state.projects.filter(x=>x.id!==pid);
+  saveProjects();
+  showDashboard();
+  showToast(`案件「${name}」を削除しました`,'error');
+}
+
+function duplicateProject(pid){
+  const src=state.projects.find(x=>x.id===pid);
+  if(!src) return;
+  const newId='p'+Date.now();
+  const newNum='PGM-'+state.nextNum;
+  state.nextNum++;
+  saveNextNum();
+  // Deep copy
+  const copy=JSON.parse(JSON.stringify(src));
+  copy.id=newId;
+  copy.num=newNum;
+  copy.name=src.name+'（複製）';
+  copy.createdAt=new Date().toISOString().slice(0,10);
+  copy.createdBy=state.user?.name||'';
+  copy.currentStep=1;
+  // Reset approvals and gate progress
+  if(copy.step3){copy.step3.dept={};copy.step3.approvalInfo={};}
+  copy.gates={g4:{},g5:{},g6:{},g7:{}};
+  copy.step8={};
+  state.projects.push(copy);
+  saveProjects();
+  showToast(`「${copy.name}」を作成しました`,'success');
+  render();
+}
+
 
 
 function showModal(type){
